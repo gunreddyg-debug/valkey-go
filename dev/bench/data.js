@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790145840686,
+  "lastUpdate": 1790146324612,
   "repoUrl": "https://github.com/gunreddyg-debug/valkey-go",
   "entries": {
     "Benchmark": [
@@ -1104,6 +1104,582 @@ window.BENCHMARK_DATA = {
             "value": 0,
             "unit": "allocs/op",
             "extra": "31594695 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gunreddyg@google.com",
+            "name": "Anurag Reddy Gunreddy",
+            "username": "gunreddyg-debug"
+          },
+          "committer": {
+            "email": "gunreddyg@google.com",
+            "name": "Anurag Reddy Gunreddy",
+            "username": "gunreddyg-debug"
+          },
+          "distinct": true,
+          "id": "d09b6d8e3be7a635c8bfcb3e30e68a4e4fcdab1c",
+          "message": "trigger dashboard data point 3",
+          "timestamp": "2026-09-23T06:50:07Z",
+          "tree_id": "b6707388a2c0ddcf89dcd3bc3b19e0c4ad69d4dc",
+          "url": "https://github.com/gunreddyg-debug/valkey-go/commit/d09b6d8e3be7a635c8bfcb3e30e68a4e4fcdab1c"
+        },
+        "date": 1790146323878,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "Benchmark_Cache_DoCache_Hit (github.com/valkey-io/valkey-go)",
+            "value": 56.52,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "18651571 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_DoCache_Hit (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 56.52,
+            "unit": "ns/op",
+            "extra": "18651571 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_DoCache_Hit (github.com/valkey-io/valkey-go) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "18651571 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_DoCache_Hit (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "18651571 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_DoCache_Miss (github.com/valkey-io/valkey-go)",
+            "value": 48.29,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "24767962 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_DoCache_Miss (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 48.29,
+            "unit": "ns/op",
+            "extra": "24767962 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_DoCache_Miss (github.com/valkey-io/valkey-go) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "24767962 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_DoCache_Miss (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "24767962 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_MGetCache (github.com/valkey-io/valkey-go)",
+            "value": 2119,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "575538 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_MGetCache (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 2119,
+            "unit": "ns/op",
+            "extra": "575538 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_MGetCache (github.com/valkey-io/valkey-go) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "575538 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_MGetCache (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "575538 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_Invalidation (github.com/valkey-io/valkey-go)",
+            "value": 2242,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "542649 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_Invalidation (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 2242,
+            "unit": "ns/op",
+            "extra": "542649 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_Invalidation (github.com/valkey-io/valkey-go) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "542649 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_Invalidation (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "542649 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_Miss_And_Server_Invalidate (github.com/valkey-io/valkey-go)",
+            "value": 695.5,
+            "unit": "ns/op\t     695 B/op\t       8 allocs/op",
+            "extra": "1921028 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_Miss_And_Server_Invalidate (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 695.5,
+            "unit": "ns/op",
+            "extra": "1921028 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_Miss_And_Server_Invalidate (github.com/valkey-io/valkey-go) - B/op",
+            "value": 695,
+            "unit": "B/op",
+            "extra": "1921028 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cache_Miss_And_Server_Invalidate (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 8,
+            "unit": "allocs/op",
+            "extra": "1921028 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Get (github.com/valkey-io/valkey-go)",
+            "value": 36.59,
+            "unit": "ns/op\t      15 B/op\t       1 allocs/op",
+            "extra": "32567318 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Get (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 36.59,
+            "unit": "ns/op",
+            "extra": "32567318 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Get (github.com/valkey-io/valkey-go) - B/op",
+            "value": 15,
+            "unit": "B/op",
+            "extra": "32567318 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Get (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "32567318 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Set (github.com/valkey-io/valkey-go)",
+            "value": 4967,
+            "unit": "ns/op\t   24962 B/op\t       1 allocs/op",
+            "extra": "239163 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Set (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 4967,
+            "unit": "ns/op",
+            "extra": "239163 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Set (github.com/valkey-io/valkey-go) - B/op",
+            "value": 24962,
+            "unit": "B/op",
+            "extra": "239163 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Set (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "239163 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Ping (github.com/valkey-io/valkey-go)",
+            "value": 13.53,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "87648564 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Ping (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 13.53,
+            "unit": "ns/op",
+            "extra": "87648564 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Ping (github.com/valkey-io/valkey-go) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "87648564 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_Ping (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "87648564 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_DoMulti (github.com/valkey-io/valkey-go)",
+            "value": 521.7,
+            "unit": "ns/op\t    1440 B/op\t       6 allocs/op",
+            "extra": "2230707 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_DoMulti (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 521.7,
+            "unit": "ns/op",
+            "extra": "2230707 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_DoMulti (github.com/valkey-io/valkey-go) - B/op",
+            "value": 1440,
+            "unit": "B/op",
+            "extra": "2230707 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Parallel_DoMulti (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 6,
+            "unit": "allocs/op",
+            "extra": "2230707 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_B_Allocation (github.com/valkey-io/valkey-go)",
+            "value": 44.89,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "26338521 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_B_Allocation (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 44.89,
+            "unit": "ns/op",
+            "extra": "26338521 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_B_Allocation (github.com/valkey-io/valkey-go) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "26338521 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_B_Allocation (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "26338521 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Flight (github.com/valkey-io/valkey-go)",
+            "value": 91.77,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13147917 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Flight (github.com/valkey-io/valkey-go) - ns/op",
+            "value": 91.77,
+            "unit": "ns/op",
+            "extra": "13147917 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Flight (github.com/valkey-io/valkey-go) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13147917 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Flight (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13147917 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Update (github.com/valkey-io/valkey-go)",
+            "value": null,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "0 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Update (github.com/valkey-io/valkey-go) - ns/op",
+            "value": null,
+            "unit": "ns/op",
+            "extra": "0 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Update (github.com/valkey-io/valkey-go) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "0 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Update (github.com/valkey-io/valkey-go) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "0 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_Set (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 34.92,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "34167760 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_Set (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 34.92,
+            "unit": "ns/op",
+            "extra": "34167760 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_Set (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "34167760 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_Set (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "34167760 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_Get (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 33.53,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "36839960 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_Get (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 33.53,
+            "unit": "ns/op",
+            "extra": "36839960 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_Get (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "36839960 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_Get (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "36839960 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_MGet (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 4803,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "218586 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_MGet (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 4803,
+            "unit": "ns/op",
+            "extra": "218586 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_MGet (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "218586 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_MGet (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "218586 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_HGetAll (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 32.31,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "36600003 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_HGetAll (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 32.31,
+            "unit": "ns/op",
+            "extra": "36600003 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_HGetAll (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "36600003 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_HGetAll (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "36600003 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_ZAdd (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 558.6,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "2138733 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_ZAdd (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 558.6,
+            "unit": "ns/op",
+            "extra": "2138733 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_ZAdd (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "2138733 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_ZAdd (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "2138733 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandBuilder_Allocation (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 31.93,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37100340 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandBuilder_Allocation (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 31.93,
+            "unit": "ns/op",
+            "extra": "37100340 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandBuilder_Allocation (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37100340 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandBuilder_Allocation (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37100340 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_SingleCommand_DynamicKeys (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 33.93,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "35362363 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_SingleCommand_DynamicKeys (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 33.93,
+            "unit": "ns/op",
+            "extra": "35362363 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_SingleCommand_DynamicKeys (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "35362363 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_SingleCommand_DynamicKeys (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "35362363 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_MultiKey_Scaling (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 669.6,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1776664 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_MultiKey_Scaling (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 669.6,
+            "unit": "ns/op",
+            "extra": "1776664 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_MultiKey_Scaling (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1776664 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_MultiKey_Scaling (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1776664 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_ComplexArgs_HSet_ZAdd (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 557.4,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "2141468 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_ComplexArgs_HSet_ZAdd (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 557.4,
+            "unit": "ns/op",
+            "extra": "2141468 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_ComplexArgs_HSet_ZAdd (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "2141468 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Builder_ComplexArgs_HSet_ZAdd (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "2141468 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_MemoryPool_PutCompleted_Parallel (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 22.58,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "47283616 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_MemoryPool_PutCompleted_Parallel (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 22.58,
+            "unit": "ns/op",
+            "extra": "47283616 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_MemoryPool_PutCompleted_Parallel (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "47283616 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_MemoryPool_PutCompleted_Parallel (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "47283616 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cluster_CRC16_Routing (github.com/valkey-io/valkey-go/internal/cmds)",
+            "value": 31.14,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37887918 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cluster_CRC16_Routing (github.com/valkey-io/valkey-go/internal/cmds) - ns/op",
+            "value": 31.14,
+            "unit": "ns/op",
+            "extra": "37887918 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cluster_CRC16_Routing (github.com/valkey-io/valkey-go/internal/cmds) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37887918 times\n4 procs"
+          },
+          {
+            "name": "Benchmark_Cluster_CRC16_Routing (github.com/valkey-io/valkey-go/internal/cmds) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37887918 times\n4 procs"
           }
         ]
       }
