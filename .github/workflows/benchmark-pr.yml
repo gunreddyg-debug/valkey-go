@@ -37,7 +37,7 @@ jobs:
           echo "$OUTPUT"
           
           # Optional: Use GitHub CLI to post the benchstat output as a comment
-          gh pr comment ${{ github.event.pull_request.number }} --body '```text'"$OUTPUT"'```' || true
+          cd pr-code && gh pr comment ${{ github.event.pull_request.number }} --body '```text'"$OUTPUT"'```' || true
           
           # If benchstat output contains a degradation (e.g., negative delta that exceeds threshold), fail CI.
           # Here we fail if we see any large regression in B/op or allocs/op
