@@ -1,14 +1,20 @@
-name: PR Benchmark Gatekeeper (Stateless)
+name: PR Benchmark Gatekeeper (On-Demand)
 on:
-  pull_request:
-    branches: [ main ]
-    paths: [ '**/*.go', 'go.mod', 'go.sum' ]
-permissions: { pull-requests: write }
+  issue_comment:
+    types: [created]
+
+permissions: { pull-requests: write, contents: read }
+
 jobs:
   benchmark:
-    if: vars.DISABLE_BENCHMARKS != 'true'
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/benchmark')
     runs-on: ubuntu-latest
     steps:
+      - name: Acknowledge Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "⏳ **Benchmark started!** [View progress](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" || true
       - name: Install benchstat
         run: go install golang.org/x/perf/cmd/benchstat@latest
       - name: Checkout Main Baseline
@@ -19,6 +25,7 @@ jobs:
       - name: Checkout PR Code
         uses: actions/checkout@v4
         with:
+          ref: refs/pull/${{ github.event.issue.number }}/head
           path: pr-code
       - name: Start Valkey
         run: |
@@ -41,10 +48,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           OUTPUT=$(~/go/bin/benchstat /tmp/main.txt /tmp/pr.txt)
-          echo "$OUTPUT"
-          cd pr-code && gh pr comment ${{ github.event.pull_request.number }} --body '```text
-          '"$OUTPUT"'
-          ```' || true
+          
+          # Construct beautiful markdown comment
+          COMMENT="## 🚀 Valkey-Go Benchmark Results
+          
+          <details>
+          <summary><b>📊 Detailed benchstat comparison (Main vs PR)</b></summary>
+
+          \`\`\`text
+          $OUTPUT
+          \`\`\`
+          </details>
+
+          *Triggered by @${{ github.actor }}*"
+          
+          cd pr-code && gh pr comment ${{ github.event.issue.number }} --body "$COMMENT" || true
+          
           if echo "$OUTPUT" | grep -q "B/op" | grep -q "+"; then
              echo "Memory regression detected!"
              exit 1
