@@ -44,7 +44,7 @@ jobs:
       - name: Run Main Benchmarks
         run: |
           set -o pipefail
-          go test -bench=. -run=^$ -benchmem -count=10 ./... | tee out.txt
+          go test -bench=. -run=^$ -benchmem -count=10 -timeout 30m ./... | tee out.txt
       - name: Average Results
         if: always()
         run: |

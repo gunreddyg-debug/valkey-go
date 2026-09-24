@@ -55,12 +55,12 @@ jobs:
         run: |
           cd main-code
           set -o pipefail
-          go test -bench=. -run=^$ -benchmem -count=10 ./... | tee /tmp/main.txt
+          go test -bench=. -run=^$ -benchmem -count=10 -timeout 30m ./... | tee /tmp/main.txt
       - name: Run PR Benchmarks
         run: |
           cd pr-code
           set -o pipefail
-          go test -bench=. -run=^$ -benchmem -count=10 ./... | tee /tmp/pr.txt
+          go test -bench=. -run=^$ -benchmem -count=10 -timeout 30m ./... | tee /tmp/pr.txt
       - name: Compare & Post Comment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
