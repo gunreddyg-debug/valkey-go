@@ -362,3 +362,4 @@ func Benchmark_Cache_Miss_And_Server_Invalidate(b *testing.B) {
 	}
 }
 // test commit for PR bot v2
+// testing PR bot on squashed commits
