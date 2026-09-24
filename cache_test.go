@@ -232,6 +232,7 @@ func Benchmark_Cache_DoCache_Hit(b *testing.B) {
 	for i := 0; i < 1000; i++ {
 		msg := strmsg('+', val1KB)
 		msg.setExpireAt(now.Add(time.Hour).UnixMilli())
+		store.Flight(cacheDynamicKeys1000[i], cacheDynamicCmds1000[i], time.Minute, now)
 		store.Update(cacheDynamicKeys1000[i], cacheDynamicCmds1000[i], msg)
 	}
 
@@ -278,6 +279,7 @@ func Benchmark_Cache_MGetCache(b *testing.B) {
 	for i := 0; i < 100; i++ {
 		msg := strmsg('+', val1KB)
 		msg.setExpireAt(now.Add(time.Hour).UnixMilli())
+		store.Flight(cacheDynamicKeys1000[i], cacheDynamicCmds1000[i], time.Minute, now)
 		store.Update(cacheDynamicKeys1000[i], cacheDynamicCmds1000[i], msg)
 	}
 	keys10 := cacheDynamicKeys1000[:10]
@@ -305,6 +307,7 @@ func Benchmark_Cache_Invalidation(b *testing.B) {
 	for i := 0; i < 1000; i++ {
 		msg := strmsg('+', "val")
 		msg.setExpireAt(now.Add(time.Hour).UnixMilli())
+		store.Flight(cacheDynamicKeys1000[i], "GET "+cacheDynamicKeys1000[i], time.Minute, now)
 		store.Update(cacheDynamicKeys1000[i], "GET "+cacheDynamicKeys1000[i], msg)
 		delMsgs[i] = strmsg('+', cacheDynamicKeys1000[i])
 	}
@@ -327,7 +330,8 @@ func Benchmark_Cache_Invalidation(b *testing.B) {
 }
 
 func Benchmark_Cache_LocalHit_Latency(b *testing.B) {
-	lru := newLRU(CacheStoreOption{CacheSizeEachConn: 100})
+	lru := newLRU(CacheStoreOption{CacheSizeEachConn: DefaultCacheBytes})
+	lru.Flight("cached_key", "GET", 10*time.Second, time.Now())
 	lru.Update("cached_key", "GET", strmsg('+', "OK"))
 
 	b.ReportAllocs()
@@ -340,7 +344,7 @@ func Benchmark_Cache_LocalHit_Latency(b *testing.B) {
 }
 
 func Benchmark_Cache_Miss_And_Server_Invalidate(b *testing.B) {
-	lru := newLRU(CacheStoreOption{CacheSizeEachConn: 100})
+	lru := newLRU(CacheStoreOption{CacheSizeEachConn: DefaultCacheBytes})
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -357,3 +361,4 @@ func Benchmark_Cache_Miss_And_Server_Invalidate(b *testing.B) {
 		}
 	}
 }
+// test commit for PR bot v2
