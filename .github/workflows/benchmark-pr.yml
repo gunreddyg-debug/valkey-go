@@ -1,0 +1,153 @@
+name: PR Benchmark Gatekeeper (On-Demand)
+on:
+  issue_comment:
+    types: [created]
+
+permissions: { pull-requests: write, contents: read }
+
+jobs:
+  benchmark:
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/benchmark') && contains(fromJson('["COLLABORATOR", "MEMBER", "OWNER"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Acknowledge Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "⏳ **Benchmark started!** [View progress](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" || true
+      - name: Install benchstat
+        run: go install golang.org/x/perf/cmd/benchstat@latest
+      - name: Get PR Base Branch
+        id: pr-base
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The checkout action needs a repository to run gh against if we don't clone first, but gh can use the repo flag
+          BASE_REF=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json baseRefName -q .baseRefName)
+          echo "base_ref=$BASE_REF" >> $GITHUB_OUTPUT
+      - name: Checkout Main Baseline
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ steps.pr-base.outputs.base_ref }}
+          path: main-code
+      - name: Checkout PR Code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: refs/pull/${{ github.event.issue.number }}/head
+          path: pr-code
+      - name: Start Valkey
+        run: |
+          cd pr-code
+          docker compose up -d valkey
+          count=0
+          until docker compose exec -T valkey valkey-cli ping | grep -q PONG; do
+            if [ $count -gt 30 ]; then
+              echo "Timeout waiting for Valkey"
+              exit 1
+            fi
+            echo "Waiting for Valkey..."
+            sleep 1
+            count=$((count+1))
+          done
+      - name: Run Main Benchmarks
+        run: |
+          cd main-code
+          set -o pipefail
+          go test -bench=. -run=^$ -benchmem -count=10 ./... | tee /tmp/main.txt
+      - name: Run PR Benchmarks
+        run: |
+          cd pr-code
+          set -o pipefail
+          go test -bench=. -run=^$ -benchmem -count=10 ./... | tee /tmp/pr.txt
+      - name: Compare & Post Comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ~/go/bin/benchstat -format csv /tmp/main.txt /tmp/pr.txt > /tmp/out.csv
+          
+          # Convert CSV to Markdown using Python
+          python3 -c "
+          import csv, sys
+          def format_val(v, unit):
+              try:
+                  f = float(v)
+                  if unit == 'sec/op':
+                      if f < 1e-6: return f'{f*1e9:.2f} ns/op'
+                      if f < 1e-3: return f'{f*1e6:.2f} µs/op'
+                      return f'{f*1e3:.2f} ms/op'
+                  return f'{f:.2f} {unit}'
+              except:
+                  return v
+          
+          with open('/tmp/out.csv') as f:
+              reader = csv.reader(f)
+              lines = []
+              unit = 'sec/op'
+              regressions = []
+              for row in reader:
+                  if not row or row[0] == 'geomean': continue
+                  if row[0] == '' and row[1] in ('sec/op', 'B/op', 'allocs/op'):
+                      unit = row[1]
+                      if unit == 'B/op' or unit == 'allocs/op':
+                          lines.append(f'\n### 💾 Memory ({unit})\n\n| Benchmark | Main | PR | Delta | Note |\n|---|---|---|---|---|')
+                      continue
+                  if row[0] == '' or len(row) < 7: continue
+                  name, old, new, delta, note = row[0], row[1], row[3], row[5], row[6]
+                  old_fmt = format_val(old, unit)
+                  new_fmt = format_val(new, unit)
+                  color = delta
+                  if delta.startswith('+'):
+                      try:
+                          val = float(delta.strip('+%'))
+                          if val > 5.0:
+                              color = f'🔴 **{delta}**'
+                              regressions.append(f'| `{name}` | {old_fmt} | {new_fmt} | {color} | _{note}_ |')
+                          else:
+                              color = f'🟠 {delta}'
+                      except:
+                          pass
+                  elif delta.startswith('-'):
+                      color = f'🟢 {delta}'
+                  elif delta == '~':
+                      color = '🟡 ~'
+                  lines.append(f'| `{name}` | {old_fmt} | {new_fmt} | {color} | _{note}_ |')
+              
+              with open('/tmp/md_output.txt', 'w') as out:
+                  out.write('### ⏱️ Performance (time/op)\n\n| Benchmark | Main | PR | Delta | Note |\n|---|---|---|---|---|\n')
+                  out.write('\n'.join(lines))
+              with open('/tmp/regressions.txt', 'w') as out:
+                  out.write('\n'.join(regressions))
+          "
+          
+          REGRESSIONS=$(cat /tmp/regressions.txt)
+          if [ -n "$REGRESSIONS" ]; then
+            SUMMARY_TEXT=$(printf "⚠️ **Severe Regressions Detected:**\n\n| Benchmark | Main | PR | Delta | Note |\n|---|---|---|---|---|\n%s" "$REGRESSIONS")
+          else
+            SUMMARY_TEXT="✅ **All benchmarks passed successfully!** No severe regressions (>5%) detected."
+          fi
+          
+          COMMENT=$(cat <<EOM
+          ## 🚀 Valkey-Go Benchmark Results
+          
+          $SUMMARY_TEXT
+          
+          <br>
+          <details>
+          <summary><b>📊 Click here to view all metrics</b></summary>
+          
+          $(cat /tmp/md_output.txt)
+          
+          </details>
+
+          *Triggered by @${{ github.actor }}*
+          EOM
+          )
+          
+          cd pr-code && gh pr comment ${{ github.event.issue.number }} --body "$COMMENT" || true
+      - name: Teardown Valkey
+        if: always()
+        run: |
+          cd pr-code
+          docker compose down -v
