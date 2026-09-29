@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790662144472,
+  "lastUpdate": 1790666752309,
   "repoUrl": "https://github.com/gunreddyg-debug/valkey-go",
   "entries": {
     "Benchmark": [
@@ -46488,6 +46488,1110 @@ window.BENCHMARK_DATA = {
             "value": 0,
             "unit": "allocs/op",
             "extra": "19207 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gunreddyg@google.com",
+            "name": "Anurag Reddy Gunreddy",
+            "username": "gunreddyg-debug"
+          },
+          "committer": {
+            "email": "gunreddyg@google.com",
+            "name": "Anurag Reddy Gunreddy",
+            "username": "gunreddyg-debug"
+          },
+          "distinct": true,
+          "id": "12d014ca874d0f5812a15208569c16c9b5711d44",
+          "message": "test: add basic e2e benchmarks and implement on-demand PR benchmark reporter\n\nSigned-off-by: Anurag Reddy Gunreddy <gunreddyg@google.com>\nCo-authored-by: Sumit Gupta <imsumit@google.com>\nSigned-off-by: Sumit Gupta <imsumit@google.com>\nCo-authored-by: Vardhaman Sanjeev Viroje <viroje@google.com>\nSigned-off-by: Vardhaman Sanjeev Viroje <viroje@google.com>\nCo-authored-by: Omkar Mestry <omanges@google.com>\nSigned-off-by: Omkar Mestry <omanges@google.com>",
+          "timestamp": "2026-09-29T07:13:01Z",
+          "tree_id": "94747af7a9c5cdcfa98e21faa3a5b3db0e9040d2",
+          "url": "https://github.com/gunreddyg-debug/valkey-go/commit/12d014ca874d0f5812a15208569c16c9b5711d44"
+        },
+        "date": 1790666751229,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=2",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "51754 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=2 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "51754 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=2 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "51754 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=2 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "51754 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/Default",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "4857 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/Default - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "4857 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/Default - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4857 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/Default - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4857 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Ping",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "60778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Ping - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "60778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Ping - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "60778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Ping - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "60778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=64",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "509730 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=64 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "509730 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=64 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "509730 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=64 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "509730 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Incr",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "53787 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Incr - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "53787 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Incr - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "53787 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Incr - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "53787 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=50",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "33379 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=50 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "33379 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=50 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "33379 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=50 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "33379 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Flight",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "9770244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Flight - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "9770244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Flight - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "9770244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Flight - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "9770244 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Del",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "50997 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Del - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "50997 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Del - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "50997 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Del - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "50997 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/SAdd",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "53384 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/SAdd - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "53384 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/SAdd - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "53384 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/SAdd - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "53384 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/NoCache",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "1071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/NoCache - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "1071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/NoCache - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/NoCache - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1071 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/NoSha",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "10213 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/NoSha - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "10213 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/NoSha - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "10213 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/NoSha - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "10213 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/HSet",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "51763 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/HSet - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "51763 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/HSet - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "51763 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/HSet - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "51763 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheStandard",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "41252 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheStandard - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "41252 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheStandard - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "41252 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheStandard - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "41252 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=8",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "239293 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=8 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "239293 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=8 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "239293 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=8 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "239293 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/DoCacheStaticClientTTL",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "10899874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/DoCacheStaticClientTTL - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "10899874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/DoCacheStaticClientTTL - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "10899874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/DoCacheStaticClientTTL - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "10899874 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/LRange",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "50650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/LRange - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "50650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/LRange - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "50650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/LRange - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "50650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoCacheStaticClientTTL",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "248930 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoCacheStaticClientTTL - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "248930 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoCacheStaticClientTTL - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "248930 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoCacheStaticClientTTL - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "248930 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/NoSha",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "106554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/NoSha - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "106554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/NoSha - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "106554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/NoSha - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "106554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/LPushLTrim",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "50506 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/LPushLTrim - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "50506 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/LPushLTrim - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "50506 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/LPushLTrim - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "50506 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/SetGet",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "48448 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/SetGet - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "48448 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/SetGet - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "48448 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/SetGet - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "48448 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/LoadSHA1",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "149479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/LoadSHA1 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "149479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/LoadSHA1 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "149479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/LoadSHA1 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "149479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Get",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "53334 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Get - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "53334 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Get - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "53334 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Get - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "53334 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/ZRange",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "48207 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/ZRange - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "48207 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/ZRange - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "48207 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/ZRange - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "48207 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/LPush",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "47378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/LPush - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "47378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/LPush - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "47378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/LPush - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "47378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoCache",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "166804 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoCache - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "166804 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoCache - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "166804 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoCache - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "166804 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=50",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "27988 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=50 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "27988 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=50 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "27988 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=50 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "27988 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCache",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "1291 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCache - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "1291 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCache - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1291 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCache - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1291 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=10",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "46299 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=10 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "46299 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=10 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "46299 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchGet/Count=10 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "46299 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/HGetAll",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "48968 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/HGetAll - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "48968 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/HGetAll - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "48968 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/HGetAll - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "48968 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/ZAdd",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "51338 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/ZAdd - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "51338 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/ZAdd - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "51338 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/ZAdd - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "51338 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/Default",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "150415 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/Default - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "150415 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/Default - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "150415 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_Exec/Default - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "150415 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=1",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "16400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=1 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "16400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=1 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "16400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do_Parallelism/Parallelism=1 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "16400 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheStaticClientTTL",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "78398 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheStaticClientTTL - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "78398 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheStaticClientTTL - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "78398 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheStaticClientTTL - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "78398 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Update",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "2626185 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Update - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "2626185 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Update - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "2626185 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLRU/Update - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "2626185 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/DoCache",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "10262706 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/DoCache - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "10262706 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/DoCache - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "10262706 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/DoCache - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "10262706 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Set",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "52590 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Set - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "52590 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Set - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "52590 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/Set - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "52590 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCacheGet",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "9653714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCacheGet - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "9653714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCacheGet - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "9653714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCacheGet - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "9653714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/LoadSHA1",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "5055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/LoadSHA1 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "5055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/LoadSHA1 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "5055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLuaScript_ExecMulti/LoadSHA1 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "5055 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheMixed",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "45631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheMixed - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "45631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheMixed - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "45631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCachingMiss/DoMultiCacheMixed - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "45631 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/Do",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "820947 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/Do - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "820947 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/Do - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "820947 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClientSideCaching/Do - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "820947 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCacheGetStaticClientTTL",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "9067666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCacheGetStaticClientTTL - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "9067666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCacheGetStaticClientTTL - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "9067666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkSingleClient_DoCache/DoCacheGetStaticClientTTL - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "9067666 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/SIsMember",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "54135 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/SIsMember - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "54135 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/SIsMember - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "54135 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_Do/SIsMember - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "54135 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=2",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "47341 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=2 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "47341 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=2 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "47341 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=2 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "47341 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/IncrExpire",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "50827 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/IncrExpire - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "50827 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/IncrExpire - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "50827 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/IncrExpire - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "50827 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=10",
+            "value": 0,
+            "unit": "ns/op 0.00 B/op 0.00 allocs/op",
+            "extra": "45078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=10 - ns/op",
+            "value": 0,
+            "unit": "ns/op",
+            "extra": "45078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=10 - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "45078 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkClient_DoMulti/BatchSet/Count=10 - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "45078 times\n4 procs"
           }
         ]
       }
