@@ -2127,3 +2127,4 @@ func BenchmarkClient_DoMulti(b *testing.B) {
 		})
 	})
 }
+// testing advanced bot grouping
