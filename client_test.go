@@ -1699,7 +1699,7 @@ func TestSingleClientConnLifetime(t *testing.T) {
 
 func BenchmarkSingleClient_DoCache(b *testing.B) {
 	ctx := context.Background()
-	client, err := NewClient(ClientOption{InitAddress: []string{"192.168.8.8:6379"}, Dialer: net.Dialer{KeepAlive: -1}})
+	client, err := NewClient(ClientOption{InitAddress: []string{"127.0.0.1:6379"}, Dialer: net.Dialer{KeepAlive: -1}})
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -1766,7 +1766,7 @@ func BenchmarkSingleClient_DoCache(b *testing.B) {
 
 func newBenchmarkClient(b *testing.B) Client {
 	client, err := NewClient(ClientOption{
-		InitAddress: []string{"192.168.8.8:6379"},
+		InitAddress: []string{"127.0.0.1:6379"},
 		Dialer:      net.Dialer{KeepAlive: -1},
 	})
 	if err != nil {
