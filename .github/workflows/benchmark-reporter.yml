@@ -62,13 +62,13 @@ jobs:
         run: |
           cd main-code
           set -o pipefail
-          go test -bench=. -run=^$ -benchmem -count=10 -timeout 30m ./... | tee /tmp/main.txt
+          go test -bench='^(BenchmarkClient_Do|BenchmarkClient_Do_Parallelism|BenchmarkClient_DoMulti)$' -run=^$ -benchmem -count=10 -timeout 30m . | tee /tmp/main.txt
 
       - name: Run PR Benchmarks
         run: |
           cd pr-code
           set -o pipefail
-          go test -bench=. -run=^$ -benchmem -count=10 -timeout 30m ./... | tee /tmp/pr.txt
+          go test -bench='^(BenchmarkClient_Do|BenchmarkClient_Do_Parallelism|BenchmarkClient_DoMulti)$' -run=^$ -benchmem -count=10 -timeout 30m . | tee /tmp/pr.txt
 
       - name: Compare Benchmarks
         run: |
