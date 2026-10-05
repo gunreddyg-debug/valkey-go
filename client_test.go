@@ -3,7 +3,6 @@ package valkey
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"reflect"
