@@ -47,7 +47,7 @@ jobs:
       - name: Run Main Benchmarks
         run: |
           set -o pipefail
-          go test -bench='^(BenchmarkClient_Do|BenchmarkClient_Do_Parallelism|BenchmarkClient_DoMulti)$' -run=^$ -benchmem -count=10 -timeout 30m . | tee out.txt
+          go test -bench='^(BenchmarkClient_Do|BenchmarkClient_Do_Parallelism|BenchmarkClient_DoMulti|BenchmarkLRU)$' -run=^$ -benchmem -count=10 -timeout 30m . | tee out.txt
       - name: Average Results
         if: always()
         run: |
