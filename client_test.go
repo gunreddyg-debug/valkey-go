@@ -1894,3 +1894,5 @@ func BenchmarkClient_DoMulti(b *testing.B) {
 		})
 	})
 }
+// testing the metrics table
+// triggering LRU benchmark test
