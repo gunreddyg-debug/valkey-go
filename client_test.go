@@ -1763,3 +1763,4 @@ func BenchmarkSingleClient_DoCache(b *testing.B) {
 	})
 	client.Close()
 }
+// dummy comment to test the markdown table generator
