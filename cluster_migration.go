@@ -28,6 +28,13 @@ import (
 // (EXPORT) or the target (IMPORT). Both already know the new owner, so the refresh does not depend
 // on gossip propagation, and the IMPORT side still reports success if the source primary fails
 // right after the handover. Commands are never delayed: a MOVED reply only notifies the monitor.
+//
+// Valkey 9.1 adds remaining_repl_size to the source's entry: the replication backlog the target still has
+// to receive. The source pauses writes for the handover only once that backlog has drained, which under
+// heavy writes can take hundreds of milliseconds after the job enters waiting-to-pause. When the field is
+// present, the monitor estimates when the drain will end and polls both sides at the finalizing cadence
+// only close to that point; before it, it polls at half the estimated remaining time. Without the field,
+// on Valkey 9.0, both sides are polled at the finalizing cadence for the whole phase.
 
 const (
 	defaultSlotMigrationIdleInterval       = 30 * time.Second
@@ -49,6 +56,12 @@ const (
 	// slotMigrationWakeBuffer bounds the MOVED targets queued for the monitor; more are dropped, because a
 	// burst of MOVED replies names the same few nodes.
 	slotMigrationWakeBuffer = 16
+	// slotMigrationDrainNearlyDone is the remaining replication backlog, in bytes, below which the handover
+	// is treated as imminent. Measured drain rates are hundreds of bytes per microsecond, so this is a few
+	// milliseconds of work at most.
+	slotMigrationDrainNearlyDone = 1 << 20
+	// slotMigrationDrainRetention forgets drain estimates of jobs that are no longer observed draining.
+	slotMigrationDrainRetention = 10 * time.Second
 )
 
 // CLUSTER GETSLOTMIGRATIONS values, see https://valkey.io/commands/cluster-getslotmigrations/
@@ -83,6 +96,16 @@ type slotMigration struct {
 	operation string // EXPORT on the source primary, IMPORT on the target primary
 	state     string
 	slots     [][2]int64
+	// replRemaining is remaining_repl_size, the replication backlog still to be sent to the target. Valkey 9.1+
+	// reports it; hasReplRemaining is false on Valkey 9.0.
+	replRemaining    int64
+	hasReplRemaining bool
+}
+
+// draining reports whether the job waits for its replication backlog to drain before the source pauses writes,
+// and the server tells how much is left (Valkey 9.1+).
+func (s slotMigration) draining() bool {
+	return s.operation == slotMigrationExport && s.state == slotMigrationStateWaitingToPause && s.hasReplRemaining
 }
 
 func (s slotMigration) phase() slotMigrationPhase {
@@ -118,6 +141,11 @@ func parseSlotMigrations(reply ValkeyMessage) ([]slotMigration, error) {
 			operation: slotMigrationField(fields, "operation"),
 			state:     slotMigrationField(fields, "state"),
 			slots:     parseSlotMigrationRanges(slotMigrationField(fields, "slot_ranges")),
+		}
+		if v, ok := fields["remaining_repl_size"]; ok {
+			if n, err := v.AsInt64(); err == nil && n >= 0 {
+				m.replRemaining, m.hasReplRemaining = n, true
+			}
 		}
 		if m.name == "" || (m.operation != slotMigrationExport && m.operation != slotMigrationImport) {
 			continue
@@ -227,8 +255,9 @@ type slotMigrationMonitor struct {
 	c          *clusterClient
 	ctx        context.Context
 	nodes      map[conn]*slotMigrationNode
-	handled    map[string]time.Time // job name -> last time it was seen, for jobs already acted on
-	moved      <-chan string        // addresses named by MOVED replies
+	handled    map[string]time.Time           // job name -> last time it was seen, for jobs already acted on
+	drains     map[string]*slotMigrationDrain // job name -> replication drain progress (Valkey 9.1+)
+	moved      <-chan string                  // addresses named by MOVED replies
 	now        func() time.Time
 	jitter     func(time.Duration) time.Duration
 	refresh    func(completed []slotMigrationCompletion)
@@ -244,6 +273,7 @@ func newSlotMigrationMonitor(c *clusterClient) *slotMigrationMonitor {
 		ctx:        context.Background(),
 		nodes:      make(map[conn]*slotMigrationNode),
 		handled:    make(map[string]time.Time),
+		drains:     make(map[string]*slotMigrationDrain),
 		moved:      c.migMoved,
 		now:        time.Now,
 		jitter:     jitterSlotMigrationInterval,
@@ -486,7 +516,12 @@ func (m *slotMigrationMonitor) tick() (time.Duration, bool) {
 		if phase != slotMigrationPhaseIdle {
 			n.lastActive = now
 		}
-		n.next = now.Add(m.jitter(m.interval(n.cadence(now))))
+		for _, mg := range migrations {
+			if mg.operation == slotMigrationExport {
+				m.observeDrain(mg, now)
+			}
+		}
+		n.next = now.Add(m.jitter(m.nodeInterval(n, now)))
 	}
 
 	if completed = m.claim(completed, now); len(completed) > 0 {
@@ -495,6 +530,11 @@ func (m *slotMigrationMonitor) tick() (time.Duration, bool) {
 	for name, seen := range m.handled {
 		if now.Sub(seen) > slotMigrationHandledRetention {
 			delete(m.handled, name)
+		}
+	}
+	for name, d := range m.drains {
+		if now.Sub(d.at) > slotMigrationDrainRetention {
+			delete(m.drains, name)
 		}
 	}
 
@@ -516,6 +556,63 @@ func (m *slotMigrationMonitor) delay(now time.Time) time.Duration {
 		delay = 0
 	}
 	return delay
+}
+
+// slotMigrationDrain is the replication drain progress of one job, observed on its source (Valkey 9.1+).
+type slotMigrationDrain struct {
+	remaining int64         // last remaining_repl_size
+	at        time.Time     // when it was observed
+	left      time.Duration // estimated time until the backlog is drained, from the last two observations; 0 if unknown
+}
+
+// observeDrain records the remaining_repl_size of a source entry. Two consecutive observations of a shrinking
+// backlog give the drain rate and the estimated time left. Any other observation clears the estimate, so the
+// finalizing cadence applies until the backlog is seen shrinking again.
+func (m *slotMigrationMonitor) observeDrain(mg slotMigration, now time.Time) {
+	if !mg.draining() {
+		delete(m.drains, mg.name)
+		return
+	}
+	d, ok := m.drains[mg.name]
+	if !ok {
+		m.drains[mg.name] = &slotMigrationDrain{remaining: mg.replRemaining, at: now}
+		return
+	}
+	d.left = 0
+	if elapsed := now.Sub(d.at); elapsed > 0 && mg.replRemaining < d.remaining {
+		d.left = time.Duration(float64(elapsed) * float64(mg.replRemaining) / float64(d.remaining-mg.replRemaining))
+	}
+	d.remaining, d.at = mg.replRemaining, now
+}
+
+// nodeInterval is the interval until the next poll of a node. During the finalization phase it is the
+// finalizing interval, except while every job of the node in that phase waits for a replication backlog that
+// the server reports as large and shrinking (Valkey 9.1+): then the node is polled at half the estimated time
+// left, between the finalizing and the active interval, so the polls get denser as the handover approaches.
+func (m *slotMigrationMonitor) nodeInterval(n *slotMigrationNode, now time.Time) time.Duration {
+	p := n.cadence(now)
+	if p != slotMigrationPhaseFinalizing {
+		return m.interval(p)
+	}
+	interval := m.active
+	for name, state := range n.seen {
+		switch state {
+		case slotMigrationStateWaitingToPause, slotMigrationStateWaitingForPaused: // the source drains its backlog
+			d, ok := m.drains[name]
+			if !ok || d.left <= 0 || d.remaining <= slotMigrationDrainNearlyDone {
+				return m.finalizing
+			}
+			if left := d.left - now.Sub(d.at); left/2 < interval {
+				interval = left / 2
+			}
+		case slotMigrationStateFailoverPaused, slotMigrationStateFailoverGranted, slotMigrationStateFailoverRequested:
+			return m.finalizing // the handover is under way
+		}
+	}
+	if interval < m.finalizing {
+		interval = m.finalizing
+	}
+	return interval
 }
 
 // claim keeps the first completion of each job. The source (EXPORT) and the target (IMPORT) both report the

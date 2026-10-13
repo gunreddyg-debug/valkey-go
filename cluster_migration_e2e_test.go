@@ -330,6 +330,12 @@ type asmLoadResult struct {
 // spread over those slots. The slots also hold filler keys, so that the migration takes a realistic amount of
 // time to replicate.
 func runASMLoad(t *testing.T, h *asmHarness, addrs []string, profile ClusterOption, nslots, filler int, tag string) asmLoadResult {
+	return runASMLoadWriting(t, h, addrs, profile, nslots, filler, tag, "x")
+}
+
+// runASMLoadWriting is runASMLoad with the value written by the SET commands. Large values make the source
+// accumulate a replication backlog that must drain before the handover.
+func runASMLoadWriting(t *testing.T, h *asmHarness, addrs []string, profile ClusterOption, nslots, filler int, tag, value string) asmLoadResult {
 	t.Helper()
 	c, polls := newASMClientCountingPolls(t, addrs, profile)
 	ctx := context.Background()
@@ -379,7 +385,7 @@ func runASMLoad(t *testing.T, h *asmHarness, addrs []string, profile ClusterOpti
 				k := keys[i%len(keys)]
 				var cmd Completed
 				if i%2 == 0 {
-					cmd = c.B().Set().Key(k).Value("x").Build()
+					cmd = c.B().Set().Key(k).Value(value).Build()
 				} else {
 					cmd = c.B().Get().Key(k).Build()
 				}
@@ -635,6 +641,156 @@ func sumInt64(s []int64) (n int64) {
 		n += v
 	}
 	return n
+}
+
+// TestSlotMigrationAwarenessHeavyWriteBenchmarkIntegration measures migrations under heavy writes (4KB values),
+// where the source spends a long time in waiting-to-pause while its replication backlog drains. It reports the
+// polls the client sends, which the drain-aware cadence reduces on Valkey 9.1, next to the MOVED replies and the
+// routing convergence, which must not get worse. It only runs with VALKEY_ASM_BENCH=1.
+func TestSlotMigrationAwarenessHeavyWriteBenchmarkIntegration(t *testing.T) {
+	if os.Getenv("VALKEY_ASM_BENCH") == "" {
+		t.Skip("set VALKEY_ASM_BENCH=1 to run the slot migration measurements")
+	}
+	value := strings.Repeat("v", 4096)
+	for _, cl := range asmClusters {
+		for _, nslots := range []int{1, 200} {
+			t.Run(fmt.Sprintf("%s/%d-slots", cl.name, nslots), func(t *testing.T) {
+				h := newASMHarness(t, cl.addrs)
+				r := runASMLoadWriting(t, h, cl.addrs, asmDefault, nslots, 100000, fmt.Sprintf("asm-heavy-%d-%d", nslots, time.Now().UnixNano()), value)
+				t.Logf("heavy slots=%d ops=%d errors=%d MOVED=%d ASK=%d polls=%d route-converged=%v p50=%v p99=%v max=%v",
+					nslots, r.ops, r.errs, r.moved, r.ask, r.polls, r.converge, r.p50, r.p99, r.pmax)
+				if r.errs != 0 {
+					t.Fatalf("commands failed during the migration: %d (%v)", r.errs, r.firstError)
+				}
+				if r.converge < 0 {
+					t.Fatal("the migrated slots were not routed to the new owner")
+				}
+			})
+		}
+	}
+}
+
+// pollTimingConn records when CLUSTER GETSLOTMIGRATIONS is sent through a real connection.
+type pollTimingConn struct {
+	conn
+	mu *sync.Mutex
+	at *[]time.Time
+}
+
+func (c *pollTimingConn) Do(ctx context.Context, cmd Completed) ValkeyResult {
+	if cs := cmd.Commands(); len(cs) == 2 && cs[0] == "CLUSTER" && cs[1] == "GETSLOTMIGRATIONS" {
+		c.mu.Lock()
+		*c.at = append(*c.at, time.Now())
+		c.mu.Unlock()
+	}
+	return c.conn.Do(ctx, cmd)
+}
+
+// TestSlotMigrationAwarenessDrainBenchmarkIntegration measures the finalization phase of a migration whose
+// replication backlog takes long to drain: 64 writers store 16KB values into the migrating slot through a
+// separate client. The client under test sends no commands, so all its polls are scheduled ones. The source is
+// observed every millisecond to time the drain window, from waiting-to-pause to success, and the test reports
+// the polls the client sent in that window and how long after success it routed the slot to the new owner.
+// On Valkey 9.1 the drain-aware cadence should send fewer polls per window without routing later. It only runs
+// with VALKEY_ASM_BENCH=1.
+func TestSlotMigrationAwarenessDrainBenchmarkIntegration(t *testing.T) {
+	if os.Getenv("VALKEY_ASM_BENCH") == "" {
+		t.Skip("set VALKEY_ASM_BENCH=1 to run the slot migration measurements")
+	}
+	for _, cl := range asmClusters {
+		t.Run(cl.name, func(t *testing.T) {
+			ctx := context.Background()
+			h := newASMHarness(t, cl.addrs)
+			writer := newASMClient(t, cl.addrs, asmOff)
+			var mu sync.Mutex
+			var pollTimes []time.Time
+			opt := ClientOption{InitAddress: cl.addrs, ClusterOption: asmDefault}
+			idle, err := newClusterClient(&opt, func(dst string, opt *ClientOption) conn {
+				return &pollTimingConn{conn: makeConn(dst, opt), mu: &mu, at: &pollTimes}
+			}, newRetryer(defaultRetryDelayFn))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer idle.Close()
+
+			src, dst, slots, tags := h.pickSlots(writer, 1, fmt.Sprintf("asm-drain-%d", time.Now().UnixNano()))
+			tag := tags[slots[0]]
+			var fill []Completed
+			for n := 0; n < 100000; n++ {
+				fill = append(fill, writer.B().Set().Key("{"+tag+"}:f"+strconv.Itoa(n)).Value("filler-value-0123456789abcdef0123456789abcdef").Build())
+			}
+			for i := 0; i < len(fill); i += 1000 {
+				for _, r := range writer.DoMulti(ctx, fill[i:min(i+1000, len(fill))]...) {
+					if err := r.Error(); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			if _, ok := waitRoute(idle, slots[0], src, time.Second); !ok {
+				t.Fatal("the client under test does not route the slot to the source")
+			}
+			time.Sleep(time.Second) // baseline of the node logs
+
+			value := strings.Repeat("v", 16384)
+			var stop atomic.Bool
+			var wg sync.WaitGroup
+			for w := 0; w < 64; w++ {
+				wg.Add(1)
+				go func(w int) {
+					defer wg.Done()
+					for i := 0; !stop.Load(); i++ {
+						writer.Do(ctx, writer.B().Set().Key("{"+tag+"}:w"+strconv.Itoa((w*1000+i)%5000)).Value(value).Build())
+					}
+				}(w)
+			}
+			time.Sleep(300 * time.Millisecond)
+
+			// start the migration and time its drain window on the source
+			before := h.jobNames(src)
+			if err := h.do(src, "CLUSTER", "MIGRATESLOTS", "SLOTSRANGE", strconv.Itoa(int(slots[0])), strconv.Itoa(int(slots[0])), "NODE", h.ids[dst]).Error(); err != nil {
+				t.Fatalf("MIGRATESLOTS: %v", err)
+			}
+			var drainStart, success time.Time
+			for deadline := time.Now().Add(30 * time.Second); success.IsZero() && time.Now().Before(deadline); time.Sleep(time.Millisecond) {
+				entries, _ := h.do(src, "CLUSTER", "GETSLOTMIGRATIONS").ToArray()
+				for _, e := range entries {
+					m, _ := e.AsMap()
+					nameMsg, stateMsg := m["name"], m["state"]
+					name, _ := nameMsg.ToString()
+					if before[name] {
+						continue
+					}
+					switch state, _ := stateMsg.ToString(); state {
+					case "waiting-to-pause", "failover-paused", "failover-granted":
+						if drainStart.IsZero() {
+							drainStart = time.Now()
+						}
+					case "success":
+						success = time.Now()
+					case "failed", "cancelled":
+						t.Fatalf("migration %s", state)
+					}
+				}
+			}
+			converged, ok := waitRoute(idle, slots[0], dst, 5*time.Second)
+			stop.Store(true)
+			wg.Wait()
+			if success.IsZero() || drainStart.IsZero() || !ok {
+				t.Fatalf("migration not observed: drain start %v, success %v, routed %v", drainStart, success, ok)
+			}
+			mu.Lock()
+			inWindow := 0
+			for _, at := range pollTimes {
+				if !at.Before(drainStart) && !at.After(success) {
+					inWindow++
+				}
+			}
+			mu.Unlock()
+			window := success.Sub(drainStart)
+			t.Logf("drain window=%v polls=%d polls-per-100ms=%.1f routed %v after success", window.Round(time.Millisecond), inWindow,
+				float64(inWindow)/(float64(window)/float64(100*time.Millisecond)), converged)
+		})
+	}
 }
 
 // ---------- compatibility with servers without ASM ----------

@@ -147,6 +147,12 @@ func TestParseSlotMigrations(t *testing.T) {
 			migEntry(resp3, // Valkey 9.0 entry without remaining_repl_size
 				"name", "bbbb", "operation", "EXPORT", "slot_ranges", "5", "state", "snapshotting",
 			),
+			migEntry(resp3, // remaining_repl_size can also be reported as a string
+				"name", "dddd", "operation", "EXPORT", "slot_ranges", "6", "state", "waiting-to-pause", "remaining_repl_size", "512",
+			),
+			migEntry(resp3, // Valkey 9.0 entry in the same state
+				"name", "eeee", "operation", "EXPORT", "slot_ranges", "7", "state", "waiting-to-pause",
+			),
 			migEntry(resp3, // an entry without a name is ignored
 				"operation", "EXPORT", "slot_ranges", "5", "state", "snapshotting",
 			),
@@ -157,12 +163,17 @@ func TestParseSlotMigrations(t *testing.T) {
 			t.Fatalf("resp3=%v unexpected err %v", resp3, err)
 		}
 		want := []slotMigration{
-			{name: "5371b28997de6fd0bbe813ad8ebdfdf2faadb308", operation: "EXPORT", state: "success", slots: [][2]int64{{0, 10}, {20, 30}}},
+			{name: "5371b28997de6fd0bbe813ad8ebdfdf2faadb308", operation: "EXPORT", state: "success", slots: [][2]int64{{0, 10}, {20, 30}}, hasReplRemaining: true}, // remaining_repl_size 0 (Valkey 9.1)
 			{name: "aaaa", operation: "IMPORT", state: "receiving-snapshot", slots: [][2]int64{{1, 1}}},
 			{name: "bbbb", operation: "EXPORT", state: "snapshotting", slots: [][2]int64{{5, 5}}},
+			{name: "dddd", operation: "EXPORT", state: "waiting-to-pause", slots: [][2]int64{{6, 6}}, replRemaining: 512, hasReplRemaining: true},
+			{name: "eeee", operation: "EXPORT", state: "waiting-to-pause", slots: [][2]int64{{7, 7}}},
 		}
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("resp3=%v got %+v, want %+v", resp3, got, want)
+		}
+		if !got[3].draining() || got[4].draining() {
+			t.Fatalf("resp3=%v only an entry that reports remaining_repl_size is draining: %+v", resp3, got[3:])
 		}
 	}
 
@@ -913,6 +924,80 @@ func TestSlotMigrationCloseCancelsInflightPoll(t *testing.T) {
 		t.Fatal("the monitor goroutine must have exited when Close returns")
 	}
 	client.Close() // a second Close must not block or panic
+}
+
+// ---------- replication drain (Valkey 9.1+) ----------
+
+func drainEntry(name, state, slots string, remaining int64) ValkeyMessage {
+	return migEntry(true, "name", name, "operation", "EXPORT", "slot_ranges", slots, "state", state, "remaining_repl_size", remaining)
+}
+
+func TestSlotMigrationMonitorDrainAwareCadence(t *testing.T) {
+	src := newScriptedConn("127.0.0.1:1", 9)
+	m, now, _ := newTestMonitor(t, ClusterOption{}, src)
+	m.tick() // baseline
+	step := func(entry ValkeyMessage, elapsed, want time.Duration) {
+		t.Helper()
+		*now = now.Add(elapsed)
+		src.set(migReply(entry))
+		m.tick()
+		if got := m.nodes[src].next.Sub(*now); got != want {
+			t.Fatalf("next poll in %v, want %v", got, want)
+		}
+	}
+	const mb = 1 << 20
+	step(drainEntry("j", "snapshotting", "0-99", 40*mb), m.idle, m.active)
+	// first observation of the drain: no rate yet, so the finalizing cadence applies
+	step(drainEntry("j", "waiting-to-pause", "0-99", 64*mb), m.active, m.finalizing)
+	// 16MB drained in 20ms: 48MB left takes about 60ms, so the next poll is in 30ms
+	step(drainEntry("j", "waiting-to-pause", "0-99", 48*mb), m.finalizing, 30*time.Millisecond)
+	// 24MB drained in 30ms: 24MB left takes about 30ms, half of it is below the finalizing floor
+	step(drainEntry("j", "waiting-to-pause", "0-99", 24*mb), 30*time.Millisecond, m.finalizing)
+	// a growing backlog clears the estimate: the finalizing cadence applies until it shrinks again
+	step(drainEntry("j", "waiting-to-pause", "0-99", 30*mb), m.finalizing, m.finalizing)
+	// a slow drain is never polled less often than at the active cadence
+	step(drainEntry("j", "waiting-to-pause", "0-99", 30*mb-1), m.finalizing, m.active)
+	// a nearly drained backlog and the handover itself use the finalizing cadence
+	step(drainEntry("j", "waiting-to-pause", "0-99", 512*1024), m.active, m.finalizing)
+	step(drainEntry("j", "failover-paused", "0-99", 0), m.finalizing, m.finalizing)
+	if _, ok := m.drains["j"]; ok {
+		t.Fatal("the drain estimate should be dropped once the job leaves waiting-to-pause")
+	}
+}
+
+func TestSlotMigrationMonitorDrainAwareCadenceOnTarget(t *testing.T) {
+	src := newScriptedConn("127.0.0.1:1", 9)
+	dst := newScriptedConn("127.0.0.2:2", 9)
+	m, now, _ := newTestMonitor(t, ClusterOption{}, src, dst)
+	m.tick() // baseline
+	const mb = 1 << 20
+	*now = now.Add(m.idle)
+	src.set(migReply(drainEntry("j", "waiting-to-pause", "0-99", 200*mb)))
+	dst.set(migReply(importEntry("j", "waiting-for-paused", "0-99")))
+	m.tick() // first drain observation
+	*now = now.Add(m.finalizing)
+	src.set(migReply(drainEntry("j", "waiting-to-pause", "0-99", 180*mb))) // 20MB in 20ms: 180ms left
+	m.tick()
+	if got := m.nodes[src].next.Sub(*now); got != 90*time.Millisecond {
+		t.Fatalf("source next poll in %v, want 90ms", got)
+	}
+	// both nodes are polled again after 90ms; the target follows the source's estimate whichever is polled first
+	*now = now.Add(90 * time.Millisecond)
+	src.set(migReply(drainEntry("j", "waiting-to-pause", "0-99", 90*mb))) // same rate: 90ms left
+	m.tick()
+	for _, n := range []*scriptedConn{src, dst} {
+		if got := m.nodes[n].next.Sub(*now); got != 45*time.Millisecond {
+			t.Fatalf("%s next poll in %v, want 45ms", n.Addr(), got)
+		}
+	}
+	*now = now.Add(45 * time.Millisecond)
+	// once the target requests the failover, the handover is under way
+	*now = now.Add(80 * time.Millisecond)
+	dst.set(migReply(importEntry("j", "failover-requested", "0-99")))
+	m.tick()
+	if got := m.nodes[dst].next.Sub(*now); got != m.finalizing {
+		t.Fatalf("target next poll in %v, want %v", got, m.finalizing)
+	}
 }
 
 // TestSlotMigrationAwarenessNoGoroutineLeak runs the monitor through polls, a MOVED wake and a refresh, and
