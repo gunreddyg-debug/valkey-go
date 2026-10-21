@@ -3,7 +3,9 @@ package valkeygcp
 import (
 	"context"
 	"errors"
+	"net"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -59,6 +61,84 @@ func TestNewClusterClient_OptionError(t *testing.T) {
 	})
 	if !errors.Is(err, errExpected) {
 		t.Fatalf("expected error %v, got %v", errExpected, err)
+	}
+}
+
+// T-DE-1: WithDiscoveryEndpoint pins the client to addr and fills only zero durations.
+func TestWithDiscoveryEndpoint(t *testing.T) {
+	ctx := context.Background()
+	var opt valkey.ClientOption
+	if err := WithDiscoveryEndpoint("10.0.0.15:6379")(ctx, &opt); err != nil {
+		t.Fatal(err)
+	}
+	want := valkey.ClusterOption{PreferInitAddressRefresh: true, PreferClusterShards: true,
+		ShardsRefreshInterval: 10 * time.Second, MinRefreshInterval: 250 * time.Millisecond, MaxSlotWait: 5 * time.Second}
+	if len(opt.InitAddress) != 1 || opt.InitAddress[0] != "10.0.0.15:6379" || opt.ClusterOption != want {
+		t.Errorf("got %v %+v, want [10.0.0.15:6379] %+v", opt.InitAddress, opt.ClusterOption, want)
+	}
+
+	// Values the caller set before are kept, except the address it replaces.
+	caller := valkey.ClusterOption{ShardsRefreshInterval: time.Minute, MinRefreshInterval: time.Second, MaxSlotWait: time.Minute, MaxMovedRedirections: 3}
+	opt = valkey.ClientOption{InitAddress: []string{"a:6379", "b:6379"}, ClusterOption: caller}
+	if err := WithDiscoveryEndpoint("10.0.0.15:6379")(ctx, &opt); err != nil {
+		t.Fatal(err)
+	}
+	caller.PreferInitAddressRefresh, caller.PreferClusterShards = true, true
+	if len(opt.InitAddress) != 1 || opt.InitAddress[0] != "10.0.0.15:6379" || opt.ClusterOption != caller {
+		t.Errorf("got %v %+v, want [10.0.0.15:6379] %+v", opt.InitAddress, opt.ClusterOption, caller)
+	}
+
+	// An empty address is an error and changes nothing.
+	opt = valkey.ClientOption{}
+	if err := WithDiscoveryEndpoint("")(ctx, &opt); err == nil || !strings.Contains(err.Error(), "WithDiscoveryEndpoint") {
+		t.Fatalf("empty address: got %v", err)
+	}
+	if !reflect.DeepEqual(opt, valkey.ClientOption{}) {
+		t.Errorf("empty address changed the option: %+v", opt)
+	}
+	if _, err := NewClusterClient(ctx, ""); err == nil || !strings.Contains(err.Error(), "WithDiscoveryEndpoint") {
+		t.Fatalf("NewClusterClient with an empty address: got %v", err)
+	}
+}
+
+// T-DE-2: NewClusterClient builds the same option as before WithDiscoveryEndpoint, plus
+// MinRefreshInterval and MaxSlotWait, and the caller's options can override them.
+func TestNewClusterClient_DiscoveryDefaults(t *testing.T) {
+	ctx := context.Background()
+	errStop := errors.New("stop before dialing")
+	var opt valkey.ClientOption
+	if _, err := NewClusterClient(ctx, "10.0.0.15:6379", captureOption(&opt, errStop)); !errors.Is(err, errStop) {
+		t.Fatalf("got %v", err)
+	}
+	if opt.RetryDelay == nil || opt.RetryDelay(maxRetryAttempts, valkey.Completed{}, nil) >= 0 {
+		t.Error("RetryDelay is not memorystoreRetryDelay")
+	}
+	opt.RetryDelay = nil // funcs can't be compared
+	want := valkey.ClientOption{
+		InitAddress: []string{"10.0.0.15:6379"},
+		ClusterOption: valkey.ClusterOption{
+			PreferInitAddressRefresh: true,
+			ShardsRefreshInterval:    10 * time.Second,
+			PreferClusterShards:      true,
+			MinRefreshInterval:       250 * time.Millisecond, // new
+			MaxSlotWait:              5 * time.Second,        // new
+		},
+		Dialer:           net.Dialer{KeepAlive: time.Second, Timeout: 2 * time.Second},
+		ConnWriteTimeout: 3 * time.Second,
+	}
+	if !reflect.DeepEqual(opt, want) {
+		t.Errorf("got %+v\nwant %+v", opt, want)
+	}
+
+	override := func(_ context.Context, o *valkey.ClientOption) error {
+		o.ClusterOption.MinRefreshInterval, o.ClusterOption.MaxSlotWait = 0, 2*time.Second
+		return nil
+	}
+	if _, err := NewClusterClient(ctx, "10.0.0.15:6379", override, captureOption(&opt, errStop)); !errors.Is(err, errStop) {
+		t.Fatalf("got %v", err)
+	}
+	if opt.ClusterOption.MinRefreshInterval != 0 || opt.ClusterOption.MaxSlotWait != 2*time.Second {
+		t.Errorf("caller override lost: %+v", opt.ClusterOption)
 	}
 }
 

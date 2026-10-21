@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/memorystore/apiv1/memorystorepb"
 	"github.com/valkey-io/valkey-go"
 	"github.com/valkey-io/valkey-go/internal/cmds"
 )
@@ -62,7 +63,8 @@ func TestResolve_ExplicitClusterIAM(t *testing.T) {
 	if opt.TLSConfig != nil {
 		t.Error("TLSConfig must be nil without TLS options")
 	}
-	want := valkey.ClusterOption{PreferInitAddressRefresh: true, ShardsRefreshInterval: 10 * time.Second, PreferClusterShards: true}
+	want := valkey.ClusterOption{PreferInitAddressRefresh: true, ShardsRefreshInterval: 10 * time.Second, PreferClusterShards: true,
+		MinRefreshInterval: 250 * time.Millisecond, MaxSlotWait: 5 * time.Second}
 	if opt.ClusterOption != want {
 		t.Errorf("ClusterOption = %+v, want %+v", opt.ClusterOption, want)
 	}
@@ -293,6 +295,39 @@ func TestResolveClientOption_Public(t *testing.T) {
 	}
 	if _, err := NewClient(context.Background(), Config{}); !errors.Is(err, errNoEndpoint) {
 		t.Fatalf("NewClient: got %v", err)
+	}
+}
+
+// T-CFG-6: cluster mode gets the WithDiscoveryEndpoint defaults (MinRefreshInterval and
+// MaxSlotWait included) and keeps the caller's values; cluster-disabled mode gets neither
+// the defaults nor the pinning.
+func TestResolveClientOption_DiscoveryDefaults(t *testing.T) {
+	want := valkey.ClusterOption{PreferInitAddressRefresh: true, PreferClusterShards: true,
+		ShardsRefreshInterval: 10 * time.Second, MinRefreshInterval: 250 * time.Millisecond, MaxSlotWait: 5 * time.Second}
+	opt, err := ResolveClientOption(context.Background(), Config{DiscoveryEndpoint: "10.0.0.15:6379"})
+	if err != nil || opt.ClusterOption != want {
+		t.Fatalf("explicit endpoint: got %+v, %v; want %+v", opt.ClusterOption, err, want)
+	}
+	// The endpoint discovered from the instance (NewClient) gets the same defaults.
+	opt, err = resolveOption(t, Config{Instance: testInstance},
+		(&fakeReader{inst: clusterInstance(memorystorepb.Instance_AUTH_DISABLED)}).factory())
+	if err != nil || len(opt.InitAddress) != 1 || opt.InitAddress[0] != "10.0.0.15:6379" || opt.ClusterOption != want {
+		t.Fatalf("discovered endpoint: got %v %+v, %v; want %+v", opt.InitAddress, opt.ClusterOption, err, want)
+	}
+
+	cfg := Config{DiscoveryEndpoint: "10.0.0.15:6379"}
+	cfg.ClientOption.InitAddress = []string{"a:6379", "b:6379"}
+	cfg.ClientOption.ClusterOption = valkey.ClusterOption{ShardsRefreshInterval: time.Minute, MinRefreshInterval: time.Second, MaxSlotWait: time.Minute}
+	opt, err = ResolveClientOption(context.Background(), cfg)
+	caller := valkey.ClusterOption{PreferInitAddressRefresh: true, PreferClusterShards: true,
+		ShardsRefreshInterval: time.Minute, MinRefreshInterval: time.Second, MaxSlotWait: time.Minute}
+	if err != nil || strings.Join(opt.InitAddress, ",") != "a:6379,b:6379" || opt.ClusterOption != caller {
+		t.Fatalf("caller values: got %v %+v, %v; want [a:6379 b:6379] %+v", opt.InitAddress, opt.ClusterOption, err, caller)
+	}
+
+	opt, err = ResolveClientOption(context.Background(), Config{PrimaryEndpoint: "10.0.0.2:6379", ReaderEndpoint: "10.0.0.3:6379"})
+	if err != nil || opt.ClusterOption != (valkey.ClusterOption{}) {
+		t.Fatalf("cluster-disabled: got %+v, %v; want no cluster options", opt.ClusterOption, err)
 	}
 }
 
