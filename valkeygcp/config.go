@@ -98,7 +98,9 @@ type Config struct {
 	// Config can carry both for different environments.
 	Instance string
 	// Network selects the PSC endpoint group when the instance is reachable from several
-	// VPCs ("projects/P/global/networks/N", or just N). Optional.
+	// VPCs: "projects/P/global/networks/N", or just N if only one of them is named N.
+	// Optional: when empty, the VM's network, read from the GCE metadata server, selects it;
+	// if that is not possible, resolution fails and asks for Network.
 	Network string
 
 	// Explicit endpoints: no control-plane call needed. With Instance set they override the

@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 
+	"cloud.google.com/go/compute/metadata"
 	memorystore "cloud.google.com/go/memorystore/apiv1"
 	"cloud.google.com/go/memorystore/apiv1/memorystorepb"
 	"google.golang.org/grpc/codes"
@@ -111,26 +113,128 @@ func pscEndpoints(inst *memorystorepb.Instance) []pscEndpoint {
 	return out
 }
 
-func pickEndpoint(eps []pscEndpoint, typ memorystorepb.ConnectionType, network string) string {
+// pickEndpoint returns the typ endpoint in the client's VPC network, or "" when the instance
+// has none there. With endpoints in several networks, Config.Network selects one; when it is
+// empty, the VM's network does (detectNetwork). It never guesses: an endpoint in another VPC
+// only fails later, as connection timeouts.
+func (r *resolved) pickEndpoint(ctx context.Context, eps []pscEndpoint, typ memorystorepb.ConnectionType) (string, error) {
+	var cands []pscEndpoint
+	var nets []string // distinct networks of cands
 	for _, e := range eps {
-		if e.typ == typ && (network == "" || e.network == "" || sameNetwork(e.network, network)) {
-			return e.addr
+		if e.typ != typ {
+			continue
+		}
+		cands = append(cands, e)
+		if n := trimNetworkURL(e.network); n != "" && !slices.Contains(nets, n) {
+			nets = append(nets, n)
 		}
 	}
-	return ""
+	if len(cands) == 0 {
+		return "", nil
+	}
+	if len(nets) == 0 || len(nets) == 1 && r.cfg.Network == "" {
+		return cands[0].addr, nil // one network, or none reported
+	}
+	var chosen string
+	var err error
+	if r.cfg.Network != "" {
+		chosen, err = matchNetwork(nets, r.cfg.Network)
+	} else {
+		chosen, err = detectNetwork(ctx, nets)
+	}
+	if err != nil {
+		return "", fmt.Errorf("valkeygcp: instance %s has %v endpoints in several networks (%s): %w; set Config.Network to one of them",
+			r.cfg.Instance, typ, strings.Join(nets, ", "), err)
+	}
+	for _, e := range cands {
+		if chosen != "" && trimNetworkURL(e.network) == chosen {
+			return e.addr, nil
+		}
+	}
+	return "", nil // none in Config.Network
 }
 
-// sameNetwork compares VPC network names given as a URL, as
-// "projects/P/global/networks/N", or as the bare name N.
-func sameNetwork(a, b string) bool {
-	a, b = trimNetworkURL(a), trimNetworkURL(b)
-	if a == b {
-		return true
+// matchNetwork returns the network of nets that want names: a path or URL must match on
+// project and name, a bare name must match a single network. "" means none matches.
+func matchNetwork(nets []string, want string) (string, error) {
+	wantProject, wantName := splitNetwork(want)
+	var found []string
+	for _, n := range nets {
+		if project, name := splitNetwork(n); name == wantName && (wantProject == "" || project == wantProject) {
+			found = append(found, n)
+		}
 	}
-	if !strings.Contains(a, "/") || !strings.Contains(b, "/") {
-		return a[strings.LastIndex(a, "/")+1:] == b[strings.LastIndex(b, "/")+1:]
+	if len(found) > 1 {
+		return "", fmt.Errorf("the network name %q matches more than one", want)
 	}
-	return false
+	if len(found) == 0 {
+		return "", nil
+	}
+	return found[0], nil
+}
+
+// Metadata server reads for detectNetwork; variables so tests can fake them (the project
+// lookups cache their answer for the whole process).
+var (
+	metadataGet              = metadata.GetWithContext
+	metadataProjectID        = metadata.ProjectIDWithContext
+	metadataNumericProjectID = metadata.NumericProjectIDWithContext
+)
+
+// detectNetwork returns the network of nets that the VM's first interface is in. The
+// metadata server gives "projects/<project number>/networks/<name>" while the instance uses
+// project IDs, so the name decides; the project only when it is the VM's own, since mapping
+// another project's number (a Shared VPC host) to its ID needs another API.
+func detectNetwork(ctx context.Context, nets []string) (string, error) {
+	if !metadataOnGCE(ctx) {
+		return "", errors.New("the client's network can't be detected off GCE")
+	}
+	vm, err := metadataGet(ctx, "instance/network-interfaces/0/network")
+	if err != nil {
+		return "", fmt.Errorf("can't read the VM's network from the metadata server: %w", err)
+	}
+	vm = strings.TrimSpace(vm)
+	vmProject, vmName := splitNetwork(vm)
+	var named []string
+	for _, n := range nets {
+		if _, name := splitNetwork(n); name == vmName {
+			named = append(named, n)
+		}
+	}
+	switch len(named) {
+	case 0:
+		return "", fmt.Errorf("the VM's network %s is none of them", vm)
+	case 1:
+		return named[0], nil
+	}
+	ownNumber, err := metadataNumericProjectID(ctx)
+	if err != nil {
+		return "", fmt.Errorf("can't read the VM's project number from the metadata server: %w", err)
+	}
+	if vmProject != ownNumber {
+		return "", fmt.Errorf("the VM's network %s is in another project (Shared VPC?) and its name matches more than one", vm)
+	}
+	ownID, err := metadataProjectID(ctx)
+	if err != nil {
+		return "", fmt.Errorf("can't read the VM's project ID from the metadata server: %w", err)
+	}
+	for _, n := range named {
+		if project, _ := splitNetwork(n); project == ownID {
+			return n, nil
+		}
+	}
+	return "", fmt.Errorf("the VM's network %s (project %s) is none of them", vm, ownID)
+}
+
+// splitNetwork returns the project and name of a network given as a URL, as
+// "projects/P/global/networks/N" (or the metadata server's "projects/P/networks/N"), or as
+// the bare name N (no project).
+func splitNetwork(n string) (project, name string) {
+	n = trimNetworkURL(n)
+	if rest, ok := strings.CutPrefix(n, "projects/"); ok {
+		project, _, _ = strings.Cut(rest, "/")
+	}
+	return project, n[strings.LastIndex(n, "/")+1:]
 }
 
 func trimNetworkURL(n string) string {
@@ -218,24 +322,31 @@ func (r *resolved) discover(ctx context.Context, newReader func(context.Context)
 	}
 
 	eps := pscEndpoints(inst)
-	hasInit := len(r.cfg.ClientOption.InitAddress) > 0
+	hasInit := len(r.cfg.ClientOption.InitAddress) > 0 // replaces the discovery or primary endpoint
 	switch topology {
 	case TopologyCluster:
-		if r.discovery == "" {
-			r.discovery = pickEndpoint(eps, memorystorepb.ConnectionType_CONNECTION_TYPE_DISCOVERY, r.cfg.Network)
-		}
 		if r.discovery == "" && !hasInit {
-			return r.errMissing(memorystorepb.ConnectionType_CONNECTION_TYPE_DISCOVERY)
+			if r.discovery, err = r.pickEndpoint(ctx, eps, memorystorepb.ConnectionType_CONNECTION_TYPE_DISCOVERY); err != nil {
+				return err
+			}
+			if r.discovery == "" {
+				return r.errMissing(memorystorepb.ConnectionType_CONNECTION_TYPE_DISCOVERY)
+			}
 		}
 	case TopologyClusterDisabled:
-		if r.primary == "" {
-			r.primary = pickEndpoint(eps, memorystorepb.ConnectionType_CONNECTION_TYPE_PRIMARY, r.cfg.Network)
-		}
-		if r.reader == "" {
-			r.reader = pickEndpoint(eps, memorystorepb.ConnectionType_CONNECTION_TYPE_READER, r.cfg.Network)
-		}
 		if r.primary == "" && !hasInit {
-			return r.errMissing(memorystorepb.ConnectionType_CONNECTION_TYPE_PRIMARY)
+			if r.primary, err = r.pickEndpoint(ctx, eps, memorystorepb.ConnectionType_CONNECTION_TYPE_PRIMARY); err != nil {
+				return err
+			}
+			if r.primary == "" {
+				return r.errMissing(memorystorepb.ConnectionType_CONNECTION_TYPE_PRIMARY)
+			}
+		}
+		so := r.cfg.ClientOption.Standalone
+		if r.reader == "" && len(so.ReplicaAddress) == 0 && !so.EnableRedirect { // clientOption uses it only then
+			if r.reader, err = r.pickEndpoint(ctx, eps, memorystorepb.ConnectionType_CONNECTION_TYPE_READER); err != nil {
+				return err
+			}
 		}
 	}
 

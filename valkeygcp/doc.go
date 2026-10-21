@@ -7,4 +7,3 @@
 // lower-level constructors, configured with options such as WithDefaultIAM,
 // WithIAMOptions, WithTokenAuth and WithTLS.
 package valkeygcp
-
