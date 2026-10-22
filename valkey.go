@@ -345,6 +345,39 @@ type ClusterOption struct {
 	// Enable this ONLY if your engine's CLUSTER SHARDS is fixed: Valkey >= 7.2.6 or Redis >= 8.0.
 	// Do NOT enable it on Redis 7.x: its CLUSTER SHARDS returns wrong topology after a failover.
 	PreferClusterShards bool
+
+	// SlotMigrationAwareness enables a background monitor for Valkey 9.0+ Atomic Slot Migrations (ASM).
+	// The monitor polls CLUSTER GETSLOTMIGRATIONS on the primaries that currently own slots, polls faster
+	// while a migration is running, and fastest while it is in its finalization phase, on both the source
+	// and the target. It refreshes the cluster topology as soon as the migration reports success, from the
+	// node that reported it. A MOVED reply also makes the monitor poll the node it names without waiting
+	// for its next scheduled poll, so a short finalization phase is not missed under traffic.
+	// This shortens the window in which commands pay an extra MOVED round trip after the slot ownership
+	// changes. Polls are jittered so that many clients do not line up.
+	// Nodes older than Valkey 9.0 are skipped. The monitor stops itself if the server rejects
+	// CLUSTER GETSLOTMIGRATIONS with NOPERM; the ACL user needs +cluster|getslotmigrations.
+	// Each poll returns the server's whole migration log, so its server cost grows with the number of
+	// clients and with cluster-slot-migration-log-max-len. The defaults suit up to about a hundred clients
+	// per cluster; for larger fleets raise SlotMigrationActiveInterval (e.g. 1s) and
+	// SlotMigrationFinalizingInterval (e.g. 100ms).
+	// Commands are never delayed by this option: a MOVED reply only notifies the monitor, without blocking.
+	SlotMigrationAwareness bool
+
+	// SlotMigrationIdleInterval is the polling interval of a primary without a running migration.
+	// It bounds how long a new migration can go unnoticed. The default is 30s.
+	SlotMigrationIdleInterval time.Duration
+
+	// SlotMigrationActiveInterval is the polling interval of a primary with a running migration, and for
+	// one minute after its last one, since rebalancing usually runs many migrations back to back.
+	// It is also the shortest time between two polls of a node woken by MOVED replies while no migration
+	// is known to run. The default is 250ms.
+	SlotMigrationActiveInterval time.Duration
+
+	// SlotMigrationFinalizingInterval is the polling interval of the source and target primaries of a
+	// migration in its finalization phase. This phase normally lasts tens of milliseconds, so the interval
+	// only applies briefly. It is also the shortest time between two polls of a node woken by MOVED replies
+	// while a migration is known to run. The default is 20ms.
+	SlotMigrationFinalizingInterval time.Duration
 }
 
 // StandaloneOption is the options for the standalone client.
