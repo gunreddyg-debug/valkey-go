@@ -23,6 +23,8 @@ var ErrReplicaOnlyConflictWithReplicaSelector = errors.New("ReplicaOnly conflict
 var ErrReplicaOnlyConflictWithReadNodeSelector = errors.New("ReplicaOnly conflicts with ReadNodeSelector option")
 var ErrReplicaSelectorConflictWithReadNodeSelector = errors.New("either set ReplicaSelector or ReadNodeSelector, not both")
 var ErrSendToReplicasNotSet = errors.New("SendToReplicas must be set when ReplicaSelector is set")
+var ErrInvalidMinRefreshInterval = errors.New("MinRefreshInterval must be greater than or equal to 0")
+var ErrInvalidMaxSlotWait = errors.New("MaxSlotWait must be greater than or equal to 0")
 
 type clusterClient struct {
 	wslots       [16384]conn
@@ -77,6 +79,12 @@ func newClusterClient(opt *ClientOption, connFn connFn, retryer retryHandler) (*
 	}
 	if opt.ReplicaSelector != nil && opt.SendToReplicas == nil {
 		return nil, ErrSendToReplicasNotSet
+	}
+	if opt.ClusterOption.MinRefreshInterval < 0 {
+		return nil, ErrInvalidMinRefreshInterval
+	}
+	if opt.ClusterOption.MaxSlotWait < 0 {
+		return nil, ErrInvalidMaxSlotWait
 	}
 	if opt.SendToReplicas != nil && opt.ReplicaSelector == nil && opt.ReadNodeSelector == nil {
 		opt.ReplicaSelector = replicaOnlySelector
@@ -151,12 +159,133 @@ func (c *clusterClient) init() error {
 	return es[0]
 }
 
+// refresh refreshes the slot map, or waits for the refresh in flight.
+// With ClusterOption.MinRefreshInterval, it returns nil without refreshing when the last refresh
+// finished less than MinRefreshInterval ago, and callers re-read the current slot map. It does not
+// join a refresh in flight then either, since one started by lazyRefresh may still be in its delay.
 func (c *clusterClient) refresh(ctx context.Context) (err error) {
-	return c.sc.Do(ctx, c._refresh)
+	if c.opt.ClusterOption.MinRefreshInterval <= 0 {
+		return c.sc.Do(ctx, c._refresh)
+	}
+	if c.refreshIntervalLeft() > 0 {
+		return nil
+	}
+	return c.sc.Do(ctx, c._refreshIfDue)
+}
+
+// _refreshIfDue is the refresh started by refresh with MinRefreshInterval. It skips the refresh if
+// another one finished after refresh checked the interval and before this one started.
+func (c *clusterClient) _refreshIfDue() error {
+	if c.refreshIntervalLeft() > 0 {
+		return nil
+	}
+	return c._refresh()
 }
 
 func (c *clusterClient) lazyRefresh() {
-	c.sc.DelayDo(c.clusterRefreshStartDelay(), c._refresh)
+	c.sc.DelayDo(max(c.clusterRefreshStartDelay(), c.refreshIntervalLeft()), c._refresh)
+}
+
+// refreshIntervalLeft returns how long ClusterOption.MinRefreshInterval still defers the next refresh:
+// the time until MinRefreshInterval has passed since the last refresh finished, or 0.
+func (c *clusterClient) refreshIntervalLeft() time.Duration {
+	interval := c.opt.ClusterOption.MinRefreshInterval
+	if interval <= 0 {
+		return 0
+	}
+	c.sc.mu.Lock()
+	last := c.sc.ts
+	c.sc.mu.Unlock()
+	if last.IsZero() {
+		return 0
+	}
+	return max(0, interval-time.Since(last))
+}
+
+// slotWaitPoll is how often a request waiting for its slot (ClusterOption.MaxSlotWait) re-reads the slot map
+// and asks for a refresh. It bounds the delay between the refresh that finds a node for the slot and the
+// request noticing it, and is short compared to a failover. Polling is cheap: re-reading takes a read lock,
+// and the refreshes are shared by all waiting requests and limited by ClusterOption.MinRefreshInterval.
+const slotWaitPoll = 10 * time.Millisecond
+
+// waitSlots is called by pick, pickMulti and pickMultiCache when the slot map has no node for a slot they
+// need. found re-reads the slot map and reports whether it has the nodes now.
+// By default, waitSlots refreshes the slot map once and fails with the refresh error, or with ErrNoSlot if
+// found still reports false. With ClusterOption.MaxSlotWait, it keeps re-reading the slot map every
+// slotWaitPoll, refreshing it, until found reports true. It fails with ctx.Err() when ctx is done, with
+// ErrClosing when the client is closed, and after MaxSlotWait with the error of the last refresh it took
+// part in, or ErrNoSlot.
+func (c *clusterClient) waitSlots(ctx context.Context, found func() bool) error {
+	maxWait := c.opt.ClusterOption.MaxSlotWait
+	if maxWait <= 0 {
+		if err := c.refresh(ctx); err != nil {
+			return err
+		}
+		if !found() {
+			return ErrNoSlot
+		}
+		return nil
+	}
+
+	deadline := time.Now().Add(maxWait)
+	wctx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+	var lastErr error
+	refreshed, err := c.refreshWithin(wctx)
+	for {
+		if refreshed && wctx.Err() == nil {
+			lastErr = err
+		}
+		if found() {
+			return nil
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		wait := time.Until(deadline)
+		if wait <= 0 {
+			break
+		}
+		timer := time.NewTimer(min(wait, slotWaitPoll))
+		select {
+		case <-timer.C:
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-c.stopCh:
+			timer.Stop()
+			return ErrClosing
+		}
+		refreshed = false
+		if time.Until(deadline) > 0 {
+			refreshed, err = c.refreshWithin(wctx)
+		}
+	}
+	if atomic.LoadUint32(&c.stop) != 0 { // closed during a refresh that outlasted MaxSlotWait; as in isClosingRedirect
+		return ErrClosing
+	}
+	if lastErr != nil {
+		return lastErr
+	}
+	return ErrNoSlot
+}
+
+// refreshWithin is refresh for waitSlots. It reports whether it started or joined a refresh, and it returns
+// when ctx is done even if the refresh has not finished: the singleflight runs a new refresh in the calling
+// goroutine, where ctx cannot stop it, so refresh is called from a new goroutine. A refresh that outlives
+// ctx finishes on its own timeouts and still updates the slot map.
+func (c *clusterClient) refreshWithin(ctx context.Context) (bool, error) {
+	if c.refreshIntervalLeft() > 0 {
+		return false, nil
+	}
+	errc := make(chan error, 1)
+	go func() { errc <- c.refresh(ctx) }()
+	select {
+	case err := <-errc:
+		return true, err
+	case <-ctx.Done():
+		return true, ctx.Err()
+	}
 }
 
 func (c *clusterClient) clusterRefreshStartDelay() time.Duration {
@@ -601,11 +730,11 @@ func (c *clusterClient) _pick(slot uint16, toReplica bool) (p conn) {
 
 func (c *clusterClient) pick(ctx context.Context, slot uint16, toReplica bool) (p conn, err error) {
 	if p = c._pick(slot, toReplica); p == nil {
-		if err := c.refresh(ctx); err != nil {
+		if err := c.waitSlots(ctx, func() bool {
+			p = c._pick(slot, toReplica)
+			return p != nil
+		}); err != nil {
 			return nil, err
-		}
-		if p = c._pick(slot, toReplica); p == nil {
-			return nil, ErrNoSlot
 		}
 	}
 	return p, nil
@@ -841,11 +970,11 @@ func (c *clusterClient) _pickMulti(multi []Completed) (retries *connretry, init 
 func (c *clusterClient) pickMulti(ctx context.Context, multi []Completed) (*connretry, bool, error) {
 	conns, hasInit := c._pickMulti(multi)
 	if conns == nil {
-		if err := c.refresh(ctx); err != nil {
+		if err := c.waitSlots(ctx, func() bool {
+			conns, hasInit = c._pickMulti(multi)
+			return conns != nil
+		}); err != nil {
 			return nil, false, err
-		}
-		if conns, hasInit = c._pickMulti(multi); conns == nil {
-			return nil, false, ErrNoSlot
 		}
 	}
 	return conns, hasInit, nil
@@ -1419,11 +1548,11 @@ func (c *clusterClient) _pickMultiCache(multi []CacheableTTL) *connretrycache {
 func (c *clusterClient) pickMultiCache(ctx context.Context, multi []CacheableTTL) (*connretrycache, error) {
 	conns := c._pickMultiCache(multi)
 	if conns == nil {
-		if err := c.refresh(ctx); err != nil {
+		if err := c.waitSlots(ctx, func() bool {
+			conns = c._pickMultiCache(multi)
+			return conns != nil
+		}); err != nil {
 			return nil, err
-		}
-		if conns = c._pickMultiCache(multi); conns == nil {
-			return nil, ErrNoSlot
 		}
 	}
 	return conns, nil
