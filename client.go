@@ -426,3 +426,5 @@ func chooseSlot(multi []Completed) uint16 {
 	}
 	return cmds.InitSlot
 }
+
+// A comment-only change, to test a pull request from a branch that predates the benchmark tooling.
