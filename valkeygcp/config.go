@@ -217,12 +217,8 @@ func (r *resolved) clientOption(ctx context.Context) (valkey.ClientOption, error
 		if len(opt.InitAddress) == 0 {
 			opt.InitAddress = []string{r.discovery}
 		}
-		// Same defaults as NewClusterClient.
-		opt.ClusterOption.PreferInitAddressRefresh = true
-		opt.ClusterOption.PreferClusterShards = true
-		if opt.ClusterOption.ShardsRefreshInterval == 0 {
-			opt.ClusterOption.ShardsRefreshInterval = defaultShardsRefreshInterval
-		}
+		// Same defaults as WithDiscoveryEndpoint (NewClusterClient), keeping a caller's InitAddress.
+		discoveryDefaults(&opt.ClusterOption)
 	case TopologyClusterDisabled:
 		if len(opt.InitAddress) == 0 {
 			opt.InitAddress = []string{r.primary}
