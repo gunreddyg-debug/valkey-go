@@ -258,6 +258,7 @@ type CoreCmdable interface {
 	XGroupDelConsumer(ctx context.Context, stream, group, consumer string) *IntCmd
 	XReadGroup(ctx context.Context, a XReadGroupArgs) *XStreamSliceCmd
 	XAck(ctx context.Context, stream, group string, ids ...string) *IntCmd
+	XNack(ctx context.Context, a XNackArgs) *IntCmd
 	XPending(ctx context.Context, stream, group string) *XPendingCmd
 	XPendingExt(ctx context.Context, a XPendingExtArgs) *XPendingExtCmd
 	XClaim(ctx context.Context, a XClaimArgs) *XMessageSliceCmd
@@ -843,7 +844,7 @@ func (c *Compat) Keys(ctx context.Context, pattern string) *StringSliceCmd {
 }
 
 func (c *Compat) Migrate(ctx context.Context, host string, port int64, key string, db int64, timeout time.Duration) *StatusCmd {
-	cmd := c.client.B().Migrate().Host(host).Port(port).Key(key).DestinationDb(db).Timeout(formatSec(timeout)).Build()
+	cmd := c.client.B().Migrate().Host(host).Port(port).Key(key).DestinationDb(db).Timeout(formatMs(timeout)).Build()
 	resp := c.client.Do(ctx, cmd)
 	return newStatusCmd(resp)
 }
@@ -2314,6 +2315,19 @@ func (c *Compat) XAck(ctx context.Context, stream, group string, ids ...string) 
 	return newIntCmd(resp)
 }
 
+func (c *Compat) XNack(ctx context.Context, a XNackArgs) *IntCmd {
+	arb := c.client.B().Arbitrary("XNACK").Keys(a.Stream).Args(a.Group, a.Mode, "IDS", strconv.Itoa(len(a.IDs))).Args(a.IDs...)
+	if a.RetryCount != nil {
+		arb = arb.Args("RETRYCOUNT", strconv.FormatUint(*a.RetryCount, 10))
+	}
+	if a.Force {
+		arb = arb.Args("FORCE")
+	}
+
+	resp := c.client.Do(ctx, arb.Build())
+	return newIntCmd(resp)
+}
+
 func (c *Compat) XPending(ctx context.Context, stream, group string) *XPendingCmd {
 	cmd := c.client.B().Xpending().Key(stream).Group(group).Build()
 	resp := c.client.Do(ctx, cmd)
@@ -2916,7 +2930,7 @@ func (c *Compat) ClientPause(ctx context.Context, dur time.Duration) *BoolCmd {
 	var mu sync.Mutex
 	ret := &BoolCmd{}
 	ret.err = c.doPrimaries(ctx, func(c valkey.Client) error {
-		res, err := c.Do(ctx, c.B().ClientPause().Timeout(formatSec(dur)).Build()).ToString()
+		res, err := c.Do(ctx, c.B().ClientPause().Timeout(formatMs(dur)).Build()).ToString()
 		if err == nil {
 			mu.Lock()
 			ret.val = res == "OK"

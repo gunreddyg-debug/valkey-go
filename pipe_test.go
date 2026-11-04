@@ -1794,6 +1794,29 @@ func TestDoStreamRecycleDestinationFull(t *testing.T) {
 	}
 }
 
+func TestDoStreamChunkedDestinationFull(t *testing.T) {
+	defer ShouldNotLeak(SetupLeakDetection())
+	p, mock, cancel, _ := setup(t, ClientOption{})
+	defer cancel()
+	go func() {
+		mock.Expect("GET", "a")
+		_, _ = io.WriteString(mock.conn, "$?\r\n;4\r\nHell\r\n;5\r\no wor\r\n;1\r\nd\r\n;0\r\n")
+	}()
+	conns := newPool(1, nil, 0, 0, nil)
+	s := p.DoStream(context.Background(), conns, cmds.NewCompleted([]string{"GET", "a"}))
+	buf := &limitedbuffer{buf: make([]byte, 1)}
+	n, err := s.WriteTo(buf)
+	if n != 1 || err != io.EOF || buf.String() != "H" {
+		t.Fatalf("unexpected stream result: n=%d, err=%v, data=%q", n, err, buf.String())
+	}
+	if s.HasNext() {
+		t.Fatal("stream should stop after an incomplete response")
+	}
+	if p.Error() == nil {
+		t.Fatal("pipe with unread response chunks must be closed")
+	}
+}
+
 func TestDoMultiStreamRecycle(t *testing.T) {
 	defer ShouldNotLeak(SetupLeakDetection())
 	p, mock, cancel, _ := setup(t, ClientOption{})
@@ -5471,6 +5494,28 @@ func TestCloseWithPipeliningAndGracefulPeriodExceeded(t *testing.T) {
 	}()
 	mock.Expect("PING")
 	<-p.close
+}
+
+func TestCloseWithConcurrentWaiter(t *testing.T) {
+	defer ShouldNotLeak(SetupLeakDetection())
+	p, _, cancel, _ := setup(t, ClientOption{})
+	// A concurrent Close, or a Do that then sees the pipe stopping, has counted
+	// itself as a waiter before this Close does. So this Close neither starts
+	// the background worker nor can rely on a syncDo to start it.
+	p.incrWaits()
+	closed := make(chan struct{})
+	go func() {
+		p.Close()
+		close(closed)
+	}()
+	select {
+	case <-closed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Close hung without a background worker")
+	}
+	p.decrWaits()
+	<-p.close
+	cancel()
 }
 
 func TestAlreadyCanceledContext(t *testing.T) {

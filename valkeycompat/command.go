@@ -692,6 +692,13 @@ type ZSliceCmd struct {
 
 func (cmd *ZSliceCmd) from(res valkey.ValkeyResult) {
 	if cmd.single {
+		// ZPOPMAX and ZPOPMIN without a count reply with an empty array,
+		// instead of a single member and score, when the key doesn't exist.
+		if arr, err := res.ToArray(); err == nil && len(arr) == 0 {
+			cmd.SetVal([]Z{})
+			cmd.setIsCacheHit(res.IsCacheHit())
+			return
+		}
 		s, err := res.AsZScore()
 		if err != nil {
 			cmd.SetErr(err)
@@ -796,6 +803,15 @@ type KeyValueSliceCmd struct {
 
 func (cmd *KeyValueSliceCmd) from(res valkey.ValkeyResult) {
 	arr, err := res.ToArray()
+	if len(arr) > 0 && !arr[0].IsArray() {
+		// RESP2 replies with [key, value, ...] instead of [[key, value], ...]
+		kv, err := res.AsStrSlice()
+		for i := 0; i+1 < len(kv); i += 2 {
+			cmd.val = append(cmd.val, KeyValue{Key: kv[i], Value: kv[i+1]})
+		}
+		cmd.SetErr(err)
+		return
+	}
 	for _, a := range arr {
 		kv, _ := a.AsStrSlice()
 		for i := 0; i < len(kv); i += 2 {
@@ -1143,13 +1159,14 @@ func (cmd *XPendingCmd) from(res valkey.ValkeyResult) {
 		cmd.SetErr(err)
 		return
 	}
+	// A group without pending entries has nil as its lower and higher IDs and consumers.
 	lower, err := arr[1].ToString()
-	if err != nil {
+	if err != nil && !valkey.IsValkeyNil(err) {
 		cmd.SetErr(err)
 		return
 	}
 	higher, err := arr[2].ToString()
-	if err != nil {
+	if err != nil && !valkey.IsValkeyNil(err) {
 		cmd.SetErr(err)
 		return
 	}
@@ -1159,7 +1176,7 @@ func (cmd *XPendingCmd) from(res valkey.ValkeyResult) {
 		Higher: higher,
 	}
 	consumerArr, err := arr[3].ToArray()
-	if err != nil {
+	if err != nil && !valkey.IsValkeyNil(err) {
 		cmd.SetErr(err)
 		return
 	}
@@ -2494,6 +2511,52 @@ type XAutoClaimArgs struct {
 	Consumer string
 	MinIdle  time.Duration
 	Count    int64
+}
+
+// XNACK modes. See [XNackArgs.Mode].
+const (
+	XNackModeSilent = "SILENT"
+	XNackModeFail   = "FAIL"
+	XNackModeFatal  = "FATAL"
+)
+
+// XNackArgs represents the arguments for the XNACK command (Redis/Valkey >= 8.8).
+//
+// XNACK negatively acknowledges one or more messages in a consumer group's
+// Pending Entries List (PEL), releasing them back to the group so they can be
+// redelivered to another consumer via XREADGROUP.
+type XNackArgs struct {
+	Stream string
+	Group  string
+
+	// Mode controls how the delivery counter is adjusted for each NACKed entry.
+	// Must be one of [XNackModeSilent], [XNackModeFail], or [XNackModeFatal]:
+	//   - SILENT: the consumer is shutting down or experiencing internal errors
+	//     unrelated to the message. The delivery counter is decremented by 1,
+	//     undoing the increment that happened when the message was delivered.
+	//   - FAIL: the consumer could not process the message (e.g. insufficient
+	//     memory), but another consumer might succeed. The delivery counter is
+	//     left unchanged.
+	//   - FATAL: the message is invalid or suspected malicious. The delivery
+	//     counter is set to MAXINT, which will immediately move the message to
+	//     the Dead Letter Queue (DLQ) if one is configured for the group.
+	Mode string
+
+	// IDs is the list of message IDs to NACK. All IDs must already be in the
+	// group's PEL (i.e. previously delivered via XREADGROUP), unless Force is set.
+	IDs []string
+
+	// RetryCount sets the delivery counter to an explicit value, overriding the
+	// counter adjustment that would otherwise be applied by Mode.
+	// Leave nil to let Mode control the counter (the common case).
+	RetryCount *uint64
+
+	// Force allows NACKing message IDs that are not yet in the group's PEL,
+	// creating new unowned NACKed PEL entries for them directly.
+	// This is analogous to the FORCE flag in XCLAIM.
+	// Primarily used internally by Redis during AOF rewrite to reconstruct
+	// NACKed entries, but can also be used to manually inject entries.
+	Force bool
 }
 
 type XMessage struct {

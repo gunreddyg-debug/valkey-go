@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -39,8 +40,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 
 	"github.com/valkey-io/valkey-go"
+	"github.com/valkey-io/valkey-go/mock"
 )
 
 type TimeValue struct {
@@ -4713,6 +4716,11 @@ func testAdapter(resp3 bool) {
 				Score:  1,
 				Member: "one",
 			}}))
+
+			// the key is gone after every member is popped
+			members, err = adapter.ZPopMax(ctx, "zset").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(BeEmpty())
 		})
 
 		It("should ZPopMin", func() {
@@ -4780,6 +4788,11 @@ func testAdapter(resp3 bool) {
 				Score:  3,
 				Member: "three",
 			}}))
+
+			// the key is gone after every member is popped
+			members, err = adapter.ZPopMin(ctx, "zset").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(BeEmpty())
 		})
 
 		It("should ZRange", func() {
@@ -6125,6 +6138,16 @@ func testAdapter(resp3 bool) {
 				Expect(n).To(Equal(int64(1)))
 			})
 
+			It("should XPending when the group has no pending entries", func() {
+				n, err := adapter.XAck(ctx, "stream", "group", "1-0", "2-0", "3-0").Result()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(n).To(Equal(int64(3)))
+
+				info, err := adapter.XPending(ctx, "stream", "group").Result()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(info).To(Equal(XPending{Count: 0}))
+			})
+
 			if resp3 {
 				It("should XPending", func() {
 					info, err := adapter.XPending(ctx, "stream", "group").Result()
@@ -6263,6 +6286,20 @@ func testAdapter(resp3 bool) {
 
 			It("should XAck", func() {
 				n, err := adapter.XAck(ctx, "stream", "group", "1-0", "2-0", "4-0").Result()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(n).To(Equal(int64(2)))
+			})
+
+			It("should XNack", func() {
+				n, err := adapter.XNack(ctx, XNackArgs{
+					Stream: "stream",
+					Group:  "group",
+					Mode:   XNackModeSilent,
+					IDs:    []string{"1-0", "2-0", "4-0"},
+				}).Result()
+				if err != nil && (strings.Contains(err.Error(), "unknown command") || strings.Contains(err.Error(), "ERR unknown")) {
+					return
+				}
 				Expect(err).NotTo(HaveOccurred())
 				Expect(n).To(Equal(int64(2)))
 			})
@@ -14367,4 +14404,42 @@ func _assert_geosearch_result(result *FTSearchResult, expectedDocIDs []string) {
 	}
 	Expect(ids).To(ConsistOf(expectedDocIDs))
 	Expect(result.Total).To(BeEquivalentTo(len(expectedDocIDs)))
+}
+
+// MIGRATE's timeout argument is in milliseconds (https://valkey.io/commands/migrate/)
+// and Migrate accepts a time.Duration, so 30s belongs on the wire as "30000". A
+// positive sub-millisecond duration is clamped to 1ms, like formatMs does.
+func TestMigrateTimeoutIsInMilliseconds(t *testing.T) {
+	for _, tc := range []struct {
+		timeout time.Duration
+		want    string
+	}{
+		{30 * time.Second, "30000"},
+		{1500 * time.Millisecond, "1500"},
+		{time.Nanosecond, "1"},
+	} {
+		t.Run(tc.timeout.String(), func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			client := mock.NewClient(ctrl)
+			var got []string
+			client.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(_ context.Context, cmd valkey.Completed) valkey.ValkeyResult {
+					got = append([]string(nil), cmd.Commands()...)
+					return mock.Result(mock.ValkeyString("OK"))
+				},
+			)
+
+			adapter := NewAdapter(client)
+			if err := adapter.Migrate(context.Background(), "127.0.0.1", 6380, "key", 0, tc.timeout).Err(); err != nil {
+				t.Fatalf("Migrate: %v", err)
+			}
+
+			want := []string{"MIGRATE", "127.0.0.1", "6380", "key", "0", tc.want}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("MIGRATE timeout is sent in the wrong unit:\n got: %q\nwant: %q", got, want)
+			}
+		})
+	}
 }
