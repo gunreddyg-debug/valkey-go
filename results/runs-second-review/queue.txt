@@ -1,0 +1,53 @@
+# PR #209 after the second review (r2) against main (m2, a23e130), alternating builds.
+# Columns: scenario label round timeout command
+smart-kill main 1 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill r2 1 150 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill main 2 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill r2 2 150 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill main 3 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill r2 3 150 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-hold3 main 1 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-hold3 r2 1 150 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-hold3 main 2 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-hold3 r2 2 150 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-hold3 main 3 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-hold3 r2 3 150 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-planned main 1 150 bench-ar/bin/bench-m2 -fail-kind planned -duration 20s
+smart-planned r2 1 150 bench-ar/bin/bench-r2 -fail-kind planned -duration 20s
+smart-planned main 2 150 bench-ar/bin/bench-m2 -fail-kind planned -duration 20s
+smart-planned r2 2 150 bench-ar/bin/bench-r2 -fail-kind planned -duration 20s
+smart-planned main 3 150 bench-ar/bin/bench-m2 -fail-kind planned -duration 20s
+smart-planned r2 3 150 bench-ar/bin/bench-r2 -fail-kind planned -duration 20s
+smart-pause main 1 150 bench-ar/bin/bench-m2 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause r2 1 150 bench-ar/bin/bench-r2 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause main 2 150 bench-ar/bin/bench-m2 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause r2 2 150 bench-ar/bin/bench-r2 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause main 3 150 bench-ar/bin/bench-m2 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause r2 3 150 bench-ar/bin/bench-r2 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-migrate main 1 180 bench-ar/bin/bench-m2 -fail-kind migrate -migrate-slots 0-199 -key-slots 0-199 -after-migrate 10s -duration 60s -errorstats-poll 20ms
+smart-migrate r2 1 180 bench-ar/bin/bench-r2 -fail-kind migrate -migrate-slots 0-199 -key-slots 0-199 -after-migrate 10s -duration 60s -errorstats-poll 20ms
+smart-migrate main 2 180 bench-ar/bin/bench-m2 -fail-kind migrate -migrate-slots 0-199 -key-slots 0-199 -after-migrate 10s -duration 60s -errorstats-poll 20ms
+smart-migrate r2 2 180 bench-ar/bin/bench-r2 -fail-kind migrate -migrate-slots 0-199 -key-slots 0-199 -after-migrate 10s -duration 60s -errorstats-poll 20ms
+smart-idle-kill main 1 180 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 30 -fail-hold 0 -fail-at 5s -idle-from 4s -idle-until 22s -duration 30s -shards-refresh 0s
+smart-idle-kill r2 1 180 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 30 -fail-hold 0 -fail-at 5s -idle-from 4s -idle-until 22s -duration 30s -shards-refresh 0s
+smart-idle-kill main 2 180 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 30 -fail-hold 0 -fail-at 5s -idle-from 4s -idle-until 22s -duration 30s -shards-refresh 0s
+smart-idle-kill r2 2 180 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 30 -fail-hold 0 -fail-at 5s -idle-from 4s -idle-until 22s -duration 30s -shards-refresh 0s
+smart-fleet f_main 1 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -clients 20
+smart-fleet f_r2 1 150 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -clients 20
+smart-fleet f_main 2 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -clients 20
+smart-fleet f_r2 2 150 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -clients 20
+smart-elect5 main 1 170 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 20 -fail-hold 5 -duration 30s
+smart-elect5 r2 1 170 bench-ar/bin/bench-r2 -fail-mode kill -fail-seconds 20 -fail-hold 5 -duration 30s
+steady main 1 120 bench-ar/bin/bench-m2 -no-fail -duration 20s
+steady r2 1 120 bench-ar/bin/bench-r2 -no-fail -duration 20s
+steady main 2 120 bench-ar/bin/bench-m2 -no-fail -duration 20s
+steady r2 2 120 bench-ar/bin/bench-r2 -no-fail -duration 20s
+smart-planned f_r2 1 150 bench-ar/bin/bench-r2 -fail-kind planned -duration 20s -clients 20
+smart-planned f_r2 2 150 bench-ar/bin/bench-r2 -fail-kind planned -duration 20s -clients 20
+smart-big-kill lmain 1 200 bench-ar/bin/bench-m2vd -max-refresh-delay 30s -fail-mode kill -fail-seconds 30 -fail-hold 0 -duration 50s
+smart-big-kill b2 1 200 bench-ar/bin/bench-r2big -fail-mode kill -fail-seconds 30 -fail-hold 0 -duration 50s
+smart-big-kill b2 2 200 bench-ar/bin/bench-r2big -fail-mode kill -fail-seconds 30 -fail-hold 0 -duration 50s
+smart-big-steady lmain 1 120 bench-ar/bin/bench-m2vd -max-refresh-delay 30s -shards-refresh 1s -no-fail -duration 20s
+smart-big-steady b2 1 120 bench-ar/bin/bench-r2big -shards-refresh 1s -no-fail -duration 20s
+smart-big-pause lmain 1 200 bench-ar/bin/bench-m2vd -max-refresh-delay 30s -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-pause b2 1 200 bench-ar/bin/bench-r2big -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s

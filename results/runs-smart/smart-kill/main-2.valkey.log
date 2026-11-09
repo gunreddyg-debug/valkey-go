@@ -1,0 +1,365 @@
+7101| 7:M 04 Nov 2026 03:28:14.216 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7101| 7:M 04 Nov 2026 03:28:14.217 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7101| 7:M 04 Nov 2026 03:28:14.217 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=7, just started
+7101| 7:M 04 Nov 2026 03:28:14.217 * Configuration loaded
+7101| 7:M 04 Nov 2026 03:28:14.217 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7101| 7:M 04 Nov 2026 03:28:14.217 * monotonic clock: POSIX clock_gettime
+7101| 7:M 04 Nov 2026 03:28:14.217 * Running mode=cluster, port=7101.
+7101| 7:M 04 Nov 2026 03:28:14.218 * No cluster configuration found, I'm 975e0e2b84ba7127e635a0b266b6233f05751bb9
+7101| 7:M 04 Nov 2026 03:28:14.228 * Server initialized
+7101| 7:M 04 Nov 2026 03:28:14.228 * Ready to accept connections tcp
+7101| 7:M 04 Nov 2026 03:28:15.488 * configEpoch set to 1 via CLUSTER SET-CONFIG-EPOCH
+7101| 7:M 04 Nov 2026 03:28:15.758 * Mismatch in topology information for sender node 25148f0ba646354e00f60d94aa6d889ac12ff51d () in shard ee8f987d4569b739381feb2e719dc53cea87593a
+7101| 7:M 04 Nov 2026 03:28:16.241 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
+7101| 7:M 04 Nov 2026 03:28:17.375 * Mismatch in topology information for sender node 55e129796c81b7b9c88a807729518a6194a2bfcc () in shard 87eee4d6995d22f0a90ac9e4d7872e3e1a0d77b2
+7101| 7:M 04 Nov 2026 03:28:17.375 * Cluster state changed: ok
+7101| 7:M 04 Nov 2026 03:28:17.500 * Node e52544c8436e37c172206fed13ad2d311320c55d () is no longer primary of shard 1fb91edfa14733106f7cd0c005bc18ab8353cc86; removed all 0 slot(s) it used to own
+7101| 7:M 04 Nov 2026 03:28:17.500 * Node e52544c8436e37c172206fed13ad2d311320c55d () is now part of shard 0c703dacc68f516c2aa8cc09b522e05bdfc308a3
+7101| 7:M 04 Nov 2026 03:28:17.500 * Node e52544c8436e37c172206fed13ad2d311320c55d () is now a replica of node 25148f0ba646354e00f60d94aa6d889ac12ff51d () in shard 0c703dacc68f516c2aa8cc09b522e05bdfc308a3
+7101| 7:M 04 Nov 2026 03:28:17.508 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is no longer primary of shard a0931d3fb6bc76fd9ed2c37eb0b496063293b041; removed all 0 slot(s) it used to own
+7101| 7:M 04 Nov 2026 03:28:17.508 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is now part of shard b51ed74240e73de2a64c1e12473bd5ecc08b5ced
+7101| 7:M 04 Nov 2026 03:28:17.508 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is now a replica of node 55e129796c81b7b9c88a807729518a6194a2bfcc () in shard b51ed74240e73de2a64c1e12473bd5ecc08b5ced
+7101| 7:M 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is no longer primary of shard a4322b2ec92b31f6f328123db3a541799a17b37c; removed all 0 slot(s) it used to own
+7101| 7:M 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is now part of shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7101| 7:M 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is now a replica of node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7101| 7:M 04 Nov 2026 03:28:17.526 * Replica 127.0.0.1:7106 asks for synchronization
+7101| 7:M 04 Nov 2026 03:28:17.526 * Full resync requested by replica 127.0.0.1:7106
+7101| 7:M 04 Nov 2026 03:28:17.526 * Replication backlog created, my new replication IDs are '122c71de270343b6c6754d8980a6867db0a7bc8a' and '0000000000000000000000000000000000000000'
+7101| 7:M 04 Nov 2026 03:28:17.526 * Delay next BGSAVE for diskless SYNC
+7101| 7:M 04 Nov 2026 03:28:22.289 * Starting BGSAVE for SYNC with target: replicas sockets using: normal sync
+7101| 7:M 04 Nov 2026 03:28:22.290 * Background RDB transfer started by pid 17 to pipe through parent process
+7101| 17:C 04 Nov 2026 03:28:22.291 * Fork CoW for RDB: current 0 MB, peak 0 MB, average 0 MB
+7101| 7:M 04 Nov 2026 03:28:22.291 * Diskless rdb transfer, done reading from pipe, 1 replicas still up.
+7101| 7:M 04 Nov 2026 03:28:22.391 * Background RDB transfer terminated with success
+7101| 7:M 04 Nov 2026 03:28:22.391 * Streamed RDB transfer with replica 127.0.0.1:7106 succeeded (socket). Waiting for REPLCONF ACK from replica to enable streaming
+7101| 7:M 04 Nov 2026 03:28:22.391 * Synchronization with replica 127.0.0.1:7106 succeeded
+7101| 7:M 04 Nov 2026 03:28:41.823 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7101| 7:M 04 Nov 2026 03:28:41.823 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7101| 7:M 04 Nov 2026 03:28:41.823 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=7, just started
+7101| 7:M 04 Nov 2026 03:28:41.823 * Configuration loaded
+7101| 7:M 04 Nov 2026 03:28:41.824 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7101| 7:M 04 Nov 2026 03:28:41.824 * monotonic clock: POSIX clock_gettime
+7101| 7:M 04 Nov 2026 03:28:41.824 * Running mode=cluster, port=7101.
+7101| 7:M 04 Nov 2026 03:28:41.825 * Node configuration loaded, I'm 975e0e2b84ba7127e635a0b266b6233f05751bb9
+7101| 7:M 04 Nov 2026 03:28:41.825 * Server initialized
+7101| 7:M 04 Nov 2026 03:28:41.826 * Ready to accept connections tcp
+7101| 7:M 04 Nov 2026 03:28:41.828 * Reconfiguring node 332e7e707b72def2f8ba3c505dbc5b574d890581 () as primary for shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7101| 7:M 04 Nov 2026 03:28:41.828 * Mismatch in topology information for sender node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7101| 7:M 04 Nov 2026 03:28:41.829 * Configuration change detected. Reconfiguring myself as a replica of node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7101| 7:S 04 Nov 2026 03:28:41.829 * Before turning into a replica, using my own primary parameters to synthesize a cached primary: I may be able to synchronize with the new primary with just a partial transfer.
+7101| 7:S 04 Nov 2026 03:28:41.829 * Connecting to PRIMARY 127.0.0.1:7106
+7101| 7:S 04 Nov 2026 03:28:41.829 * PRIMARY <-> REPLICA sync started
+7101| 7:S 04 Nov 2026 03:28:41.829 * Cluster state changed: ok
+7101| 7:S 04 Nov 2026 03:28:41.836 * Non blocking connect for SYNC fired the event.
+7101| 7:S 04 Nov 2026 03:28:41.846 * Primary replied to PING, replication can continue...
+7101| 7:S 04 Nov 2026 03:28:41.846 * Trying a partial resynchronization (request cd4701a7fc5878f2ee21be530a31a3d9b6b4529d:1).
+7101| 7:S 04 Nov 2026 03:28:46.928 * Full resync from primary: 2f6db0c91884b1a767c63b51509b57ee37ee7202:130727054
+7101| 7:S 04 Nov 2026 03:28:46.935 * Replica main thread creating Bio thread to save RDB to disk
+7101| 7:S 04 Nov 2026 03:28:46.935 * Replica bio thread: PRIMARY <-> REPLICA sync: receiving streamed RDB from primary with EOF to disk
+7101| 7:S 04 Nov 2026 03:28:46.936 * Replica bio thread: Done downloading RDB
+7101| 7:S 04 Nov 2026 03:28:47.887 * Replica main thread detected RDB download completion in Bio thread
+7101| 7:S 04 Nov 2026 03:28:47.887 * Loading the RDB and finalizing primary-replica sync...
+7101| 7:S 04 Nov 2026 03:28:47.893 * Discarding previously cached primary state.
+7101| 7:S 04 Nov 2026 03:28:47.893 * PRIMARY <-> REPLICA sync: Flushing old data
+7101| 7:S 04 Nov 2026 03:28:47.893 * PRIMARY <-> REPLICA sync: Loading DB in memory
+7101| 7:S 04 Nov 2026 03:28:47.893 * Cleaning slot migration log in anticipation of a load operation.
+7101| 7:S 04 Nov 2026 03:28:47.893 * Loading RDB produced by Valkey version 9.0.6
+7101| 7:S 04 Nov 2026 03:28:47.893 * RDB age 1 seconds
+7101| 7:S 04 Nov 2026 03:28:47.893 * RDB memory usage when created 13.26 Mb
+7101| 7:S 04 Nov 2026 03:28:47.895 * Done loading RDB, keys loaded: 1000, keys expired: 0.
+7101| 7:S 04 Nov 2026 03:28:47.895 * PRIMARY <-> REPLICA sync: Finished with success
+7102| 6:M 04 Nov 2026 03:28:14.842 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7102| 6:M 04 Nov 2026 03:28:14.842 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7102| 6:M 04 Nov 2026 03:28:14.842 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=6, just started
+7102| 6:M 04 Nov 2026 03:28:14.842 * Configuration loaded
+7102| 6:M 04 Nov 2026 03:28:14.843 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7102| 6:M 04 Nov 2026 03:28:14.843 * monotonic clock: POSIX clock_gettime
+7102| 6:M 04 Nov 2026 03:28:14.843 * Running mode=cluster, port=7102.
+7102| 6:M 04 Nov 2026 03:28:14.844 * No cluster configuration found, I'm 25148f0ba646354e00f60d94aa6d889ac12ff51d
+7102| 6:M 04 Nov 2026 03:28:14.850 * Server initialized
+7102| 6:M 04 Nov 2026 03:28:14.850 * Ready to accept connections tcp
+7102| 6:M 04 Nov 2026 03:28:15.489 * configEpoch set to 2 via CLUSTER SET-CONFIG-EPOCH
+7102| 6:M 04 Nov 2026 03:28:15.494 * Cluster meet 127.0.0.1:7101 (user request from 'id=4 addr=127.0.0.1:48674 laddr=127.0.0.1:7102 fd=11 name=*redacted* user=*redacted* lib-name= lib-ver=').
+7102| 6:M 04 Nov 2026 03:28:15.638 * Successfully completed handshake with 975e0e2b84ba7127e635a0b266b6233f05751bb9 ()
+7102| 6:M 04 Nov 2026 03:28:15.638 * Mismatch in topology information for sender node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard 9c656cc35457bf420ad030c949add64ef50ea532
+7102| 6:M 04 Nov 2026 03:28:16.166 * Mismatch in topology information for sender node 55e129796c81b7b9c88a807729518a6194a2bfcc () in shard c9bd8172af931ad6321277ee9ca9495b661f7929
+7102| 6:M 04 Nov 2026 03:28:16.871 * Cluster state changed: ok
+7102| 6:M 04 Nov 2026 03:28:17.500 * Node e52544c8436e37c172206fed13ad2d311320c55d () is no longer primary of shard 1fb91edfa14733106f7cd0c005bc18ab8353cc86; removed all 0 slot(s) it used to own
+7102| 6:M 04 Nov 2026 03:28:17.500 * Node e52544c8436e37c172206fed13ad2d311320c55d () is now part of shard 0c703dacc68f516c2aa8cc09b522e05bdfc308a3
+7102| 6:M 04 Nov 2026 03:28:17.500 * Node e52544c8436e37c172206fed13ad2d311320c55d () is now a replica of node 25148f0ba646354e00f60d94aa6d889ac12ff51d () in shard 0c703dacc68f516c2aa8cc09b522e05bdfc308a3
+7102| 6:M 04 Nov 2026 03:28:17.509 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is no longer primary of shard a0931d3fb6bc76fd9ed2c37eb0b496063293b041; removed all 0 slot(s) it used to own
+7102| 6:M 04 Nov 2026 03:28:17.509 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is now part of shard b51ed74240e73de2a64c1e12473bd5ecc08b5ced
+7102| 6:M 04 Nov 2026 03:28:17.509 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is now a replica of node 55e129796c81b7b9c88a807729518a6194a2bfcc () in shard b51ed74240e73de2a64c1e12473bd5ecc08b5ced
+7102| 6:M 04 Nov 2026 03:28:17.516 * Replica 127.0.0.1:7104 asks for synchronization
+7102| 6:M 04 Nov 2026 03:28:17.516 * Full resync requested by replica 127.0.0.1:7104
+7102| 6:M 04 Nov 2026 03:28:17.516 * Replication backlog created, my new replication IDs are '282737162c8c47bc7892b62536d0536b7c50bc0c' and '0000000000000000000000000000000000000000'
+7102| 6:M 04 Nov 2026 03:28:17.516 * Delay next BGSAVE for diskless SYNC
+7102| 6:M 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is no longer primary of shard 7f3003b39b59221598d99e26790b214932dbc394; removed all 0 slot(s) it used to own
+7102| 6:M 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is now part of shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7102| 6:M 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is now a replica of node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7102| 6:M 04 Nov 2026 03:28:22.944 * Starting BGSAVE for SYNC with target: replicas sockets using: normal sync
+7102| 6:M 04 Nov 2026 03:28:22.945 * Background RDB transfer started by pid 16 to pipe through parent process
+7102| 16:C 04 Nov 2026 03:28:22.947 * Fork CoW for RDB: current 0 MB, peak 0 MB, average 0 MB
+7102| 6:M 04 Nov 2026 03:28:22.947 * Diskless rdb transfer, done reading from pipe, 1 replicas still up.
+7102| 6:M 04 Nov 2026 03:28:23.046 * Background RDB transfer terminated with success
+7102| 6:M 04 Nov 2026 03:28:23.046 * Streamed RDB transfer with replica 127.0.0.1:7104 succeeded (socket). Waiting for REPLCONF ACK from replica to enable streaming
+7102| 6:M 04 Nov 2026 03:28:23.046 * Synchronization with replica 127.0.0.1:7104 succeeded
+7102| 6:M 04 Nov 2026 03:28:37.046 * FAIL message received from 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () about 975e0e2b84ba7127e635a0b266b6233f05751bb9 ()
+7102| 6:M 04 Nov 2026 03:28:37.046 # Cluster state changed: fail
+7102| 6:M 04 Nov 2026 03:28:37.046 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
+7102| 6:M 04 Nov 2026 03:28:37.378 * Failover auth granted to 332e7e707b72def2f8ba3c505dbc5b574d890581 () for epoch 7
+7102| 6:M 04 Nov 2026 03:28:37.421 * Reconfiguring node 332e7e707b72def2f8ba3c505dbc5b574d890581 () as primary for shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7102| 6:M 04 Nov 2026 03:28:37.421 * Mismatch in topology information for sender node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7102| 6:M 04 Nov 2026 03:28:37.421 * Cluster state changed: ok
+7102| 6:M 04 Nov 2026 03:28:41.828 * Mismatch in topology information for sender node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7102| 6:M 04 Nov 2026 03:28:41.837 * Node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () is now a replica of node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7102| 6:M 04 Nov 2026 03:28:41.837 * Clear FAIL state for node 975e0e2b84ba7127e635a0b266b6233f05751bb9 (): replica is reachable again.
+7103| 7:M 04 Nov 2026 03:28:14.442 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7103| 7:M 04 Nov 2026 03:28:14.442 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7103| 7:M 04 Nov 2026 03:28:14.442 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=7, just started
+7103| 7:M 04 Nov 2026 03:28:14.442 * Configuration loaded
+7103| 7:M 04 Nov 2026 03:28:14.443 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7103| 7:M 04 Nov 2026 03:28:14.443 * monotonic clock: POSIX clock_gettime
+7103| 7:M 04 Nov 2026 03:28:14.443 * Running mode=cluster, port=7103.
+7103| 7:M 04 Nov 2026 03:28:14.444 * No cluster configuration found, I'm 55e129796c81b7b9c88a807729518a6194a2bfcc
+7103| 7:M 04 Nov 2026 03:28:14.451 * Server initialized
+7103| 7:M 04 Nov 2026 03:28:14.451 * Ready to accept connections tcp
+7103| 7:M 04 Nov 2026 03:28:15.490 * configEpoch set to 3 via CLUSTER SET-CONFIG-EPOCH
+7103| 7:M 04 Nov 2026 03:28:15.494 * Cluster meet 127.0.0.1:7101 (user request from 'id=4 addr=127.0.0.1:50988 laddr=127.0.0.1:7103 fd=11 name=*redacted* user=*redacted* lib-name= lib-ver=').
+7103| 7:M 04 Nov 2026 03:28:15.638 * Successfully completed handshake with 975e0e2b84ba7127e635a0b266b6233f05751bb9 ()
+7103| 7:M 04 Nov 2026 03:28:15.638 * Mismatch in topology information for sender node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard 20b2838f246b019c7b4d3a716d5d278c04da18e8
+7103| 7:M 04 Nov 2026 03:28:16.269 * Mismatch in topology information for sender node 25148f0ba646354e00f60d94aa6d889ac12ff51d () in shard 85cb2f6f29c72c8f172d5291253c29617b2c19fe
+7103| 7:M 04 Nov 2026 03:28:16.470 * Cluster state changed: ok
+7103| 7:M 04 Nov 2026 03:28:17.501 * Node e52544c8436e37c172206fed13ad2d311320c55d () is no longer primary of shard 1fb91edfa14733106f7cd0c005bc18ab8353cc86; removed all 0 slot(s) it used to own
+7103| 7:M 04 Nov 2026 03:28:17.501 * Node e52544c8436e37c172206fed13ad2d311320c55d () is now part of shard 0c703dacc68f516c2aa8cc09b522e05bdfc308a3
+7103| 7:M 04 Nov 2026 03:28:17.501 * Node e52544c8436e37c172206fed13ad2d311320c55d () is now a replica of node 25148f0ba646354e00f60d94aa6d889ac12ff51d () in shard 0c703dacc68f516c2aa8cc09b522e05bdfc308a3
+7103| 7:M 04 Nov 2026 03:28:17.508 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is no longer primary of shard a0931d3fb6bc76fd9ed2c37eb0b496063293b041; removed all 0 slot(s) it used to own
+7103| 7:M 04 Nov 2026 03:28:17.508 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is now part of shard b51ed74240e73de2a64c1e12473bd5ecc08b5ced
+7103| 7:M 04 Nov 2026 03:28:17.508 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is now a replica of node 55e129796c81b7b9c88a807729518a6194a2bfcc () in shard b51ed74240e73de2a64c1e12473bd5ecc08b5ced
+7103| 7:M 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is no longer primary of shard 7f3003b39b59221598d99e26790b214932dbc394; removed all 0 slot(s) it used to own
+7103| 7:M 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is now part of shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7103| 7:M 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is now a replica of node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7103| 7:M 04 Nov 2026 03:28:17.525 * Replica 127.0.0.1:7105 asks for synchronization
+7103| 7:M 04 Nov 2026 03:28:17.525 * Full resync requested by replica 127.0.0.1:7105
+7103| 7:M 04 Nov 2026 03:28:17.525 * Replication backlog created, my new replication IDs are '88fb71a72e9099608af45c543dfc90f47a984931' and '0000000000000000000000000000000000000000'
+7103| 7:M 04 Nov 2026 03:28:17.525 * Delay next BGSAVE for diskless SYNC
+7103| 7:M 04 Nov 2026 03:28:22.521 * Starting BGSAVE for SYNC with target: replicas sockets using: normal sync
+7103| 7:M 04 Nov 2026 03:28:22.521 * Background RDB transfer started by pid 17 to pipe through parent process
+7103| 17:C 04 Nov 2026 03:28:22.523 * Fork CoW for RDB: current 0 MB, peak 0 MB, average 0 MB
+7103| 7:M 04 Nov 2026 03:28:22.523 * Diskless rdb transfer, done reading from pipe, 1 replicas still up.
+7103| 7:M 04 Nov 2026 03:28:22.622 * Background RDB transfer terminated with success
+7103| 7:M 04 Nov 2026 03:28:22.622 * Streamed RDB transfer with replica 127.0.0.1:7105 succeeded (socket). Waiting for REPLCONF ACK from replica to enable streaming
+7103| 7:M 04 Nov 2026 03:28:22.622 * Synchronization with replica 127.0.0.1:7105 succeeded
+7103| 7:M 04 Nov 2026 03:28:37.045 * FAIL message received from 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () about 975e0e2b84ba7127e635a0b266b6233f05751bb9 ()
+7103| 7:M 04 Nov 2026 03:28:37.045 # Cluster state changed: fail
+7103| 7:M 04 Nov 2026 03:28:37.045 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
+7103| 7:M 04 Nov 2026 03:28:37.378 * Failover auth granted to 332e7e707b72def2f8ba3c505dbc5b574d890581 () for epoch 7
+7103| 7:M 04 Nov 2026 03:28:37.421 * Reconfiguring node 332e7e707b72def2f8ba3c505dbc5b574d890581 () as primary for shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7103| 7:M 04 Nov 2026 03:28:37.421 * Mismatch in topology information for sender node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7103| 7:M 04 Nov 2026 03:28:37.421 * Cluster state changed: ok
+7103| 7:M 04 Nov 2026 03:28:41.828 * Mismatch in topology information for sender node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7103| 7:M 04 Nov 2026 03:28:41.837 * Node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () is now a replica of node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7103| 7:M 04 Nov 2026 03:28:41.846 * Clear FAIL state for node 975e0e2b84ba7127e635a0b266b6233f05751bb9 (): replica is reachable again.
+7104| 7:M 04 Nov 2026 03:28:15.132 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7104| 7:M 04 Nov 2026 03:28:15.132 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7104| 7:M 04 Nov 2026 03:28:15.132 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=7, just started
+7104| 7:M 04 Nov 2026 03:28:15.132 * Configuration loaded
+7104| 7:M 04 Nov 2026 03:28:15.132 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7104| 7:M 04 Nov 2026 03:28:15.132 * monotonic clock: POSIX clock_gettime
+7104| 7:M 04 Nov 2026 03:28:15.133 * Running mode=cluster, port=7104.
+7104| 7:M 04 Nov 2026 03:28:15.133 * No cluster configuration found, I'm e52544c8436e37c172206fed13ad2d311320c55d
+7104| 7:M 04 Nov 2026 03:28:15.141 * Server initialized
+7104| 7:M 04 Nov 2026 03:28:15.141 * Ready to accept connections tcp
+7104| 7:M 04 Nov 2026 03:28:15.491 * configEpoch set to 4 via CLUSTER SET-CONFIG-EPOCH
+7104| 7:M 04 Nov 2026 03:28:15.495 * Cluster meet 127.0.0.1:7101 (user request from 'id=4 addr=127.0.0.1:58768 laddr=127.0.0.1:7104 fd=11 name=*redacted* user=*redacted* lib-name= lib-ver=').
+7104| 7:M 04 Nov 2026 03:28:15.638 * Successfully completed handshake with 975e0e2b84ba7127e635a0b266b6233f05751bb9 ()
+7104| 7:M 04 Nov 2026 03:28:15.638 * Mismatch in topology information for sender node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard a5488b9f73fa12a19bf5be0f80c3ed7560ec77a8
+7104| 7:M 04 Nov 2026 03:28:16.156 * Mismatch in topology information for sender node 55e129796c81b7b9c88a807729518a6194a2bfcc () in shard ddd66d99d72fc7d5219e4a0aacf2a041951215b6
+7104| 7:M 04 Nov 2026 03:28:16.163 * Mismatch in topology information for sender node 25148f0ba646354e00f60d94aa6d889ac12ff51d () in shard 58572c7852294b15edc322167ab7a69775ee0bc2
+7104| 7:M 04 Nov 2026 03:28:17.166 * Cluster state changed: ok
+7104| 7:S 04 Nov 2026 03:28:17.499 * Connecting to PRIMARY 127.0.0.1:7102
+7104| 7:S 04 Nov 2026 03:28:17.499 * PRIMARY <-> REPLICA sync started
+7104| 7:S 04 Nov 2026 03:28:17.500 * Non blocking connect for SYNC fired the event.
+7104| 7:S 04 Nov 2026 03:28:17.500 * Primary replied to PING, replication can continue...
+7104| 7:S 04 Nov 2026 03:28:17.502 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is no longer primary of shard a0931d3fb6bc76fd9ed2c37eb0b496063293b041; removed all 0 slot(s) it used to own
+7104| 7:S 04 Nov 2026 03:28:17.502 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is now part of shard b51ed74240e73de2a64c1e12473bd5ecc08b5ced
+7104| 7:S 04 Nov 2026 03:28:17.502 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is now a replica of node 55e129796c81b7b9c88a807729518a6194a2bfcc () in shard b51ed74240e73de2a64c1e12473bd5ecc08b5ced
+7104| 7:S 04 Nov 2026 03:28:17.516 * Partial resynchronization not possible (no cached primary)
+7104| 7:S 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is no longer primary of shard 7f3003b39b59221598d99e26790b214932dbc394; removed all 0 slot(s) it used to own
+7104| 7:S 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is now part of shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7104| 7:S 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is now a replica of node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7104| 7:S 04 Nov 2026 03:28:22.944 * Full resync from primary: 282737162c8c47bc7892b62536d0536b7c50bc0c:0
+7104| 7:S 04 Nov 2026 03:28:22.946 * Replica main thread creating Bio thread to save RDB to disk
+7104| 7:S 04 Nov 2026 03:28:22.946 * Replica bio thread: PRIMARY <-> REPLICA sync: receiving streamed RDB from primary with EOF to disk
+7104| 7:S 04 Nov 2026 03:28:22.946 * Replica bio thread: Done downloading RDB
+7104| 7:S 04 Nov 2026 03:28:23.216 * Replica main thread detected RDB download completion in Bio thread
+7104| 7:S 04 Nov 2026 03:28:23.216 * Loading the RDB and finalizing primary-replica sync...
+7104| 7:S 04 Nov 2026 03:28:23.222 * PRIMARY <-> REPLICA sync: Flushing old data
+7104| 7:S 04 Nov 2026 03:28:23.222 * PRIMARY <-> REPLICA sync: Loading DB in memory
+7104| 7:S 04 Nov 2026 03:28:23.222 * Cleaning slot migration log in anticipation of a load operation.
+7104| 7:S 04 Nov 2026 03:28:23.222 * Loading RDB produced by Valkey version 9.0.6
+7104| 7:S 04 Nov 2026 03:28:23.222 * RDB age 1 seconds
+7104| 7:S 04 Nov 2026 03:28:23.222 * RDB memory usage when created 2.83 Mb
+7104| 7:S 04 Nov 2026 03:28:23.222 * Done loading RDB, keys loaded: 0, keys expired: 0.
+7104| 7:S 04 Nov 2026 03:28:23.222 * PRIMARY <-> REPLICA sync: Finished with success
+7104| 7:S 04 Nov 2026 03:28:36.902 * NODE 975e0e2b84ba7127e635a0b266b6233f05751bb9 () possibly failing.
+7104| 7:S 04 Nov 2026 03:28:37.046 * FAIL message received from 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () about 975e0e2b84ba7127e635a0b266b6233f05751bb9 ()
+7104| 7:S 04 Nov 2026 03:28:37.046 # Cluster state changed: fail
+7104| 7:S 04 Nov 2026 03:28:37.046 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
+7104| 7:S 04 Nov 2026 03:28:37.421 * Reconfiguring node 332e7e707b72def2f8ba3c505dbc5b574d890581 () as primary for shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7104| 7:S 04 Nov 2026 03:28:37.421 * Mismatch in topology information for sender node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7104| 7:S 04 Nov 2026 03:28:37.421 * Cluster state changed: ok
+7104| 7:S 04 Nov 2026 03:28:41.828 * Mismatch in topology information for sender node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7104| 7:S 04 Nov 2026 03:28:41.837 * Node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () is now a replica of node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7104| 7:S 04 Nov 2026 03:28:41.867 * Clear FAIL state for node 975e0e2b84ba7127e635a0b266b6233f05751bb9 (): replica is reachable again.
+7105| 7:M 04 Nov 2026 03:28:13.878 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7105| 7:M 04 Nov 2026 03:28:13.878 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7105| 7:M 04 Nov 2026 03:28:13.878 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=7, just started
+7105| 7:M 04 Nov 2026 03:28:13.878 * Configuration loaded
+7105| 7:M 04 Nov 2026 03:28:13.878 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7105| 7:M 04 Nov 2026 03:28:13.878 * monotonic clock: POSIX clock_gettime
+7105| 7:M 04 Nov 2026 03:28:13.879 * Running mode=cluster, port=7105.
+7105| 7:M 04 Nov 2026 03:28:13.879 * No cluster configuration found, I'm 0c6fafd750a93beeeaa44079d14c62c175e9fdf0
+7105| 7:M 04 Nov 2026 03:28:13.890 * Server initialized
+7105| 7:M 04 Nov 2026 03:28:13.890 * Ready to accept connections tcp
+7105| 7:M 04 Nov 2026 03:28:15.492 * configEpoch set to 5 via CLUSTER SET-CONFIG-EPOCH
+7105| 7:M 04 Nov 2026 03:28:15.495 * Cluster meet 127.0.0.1:7101 (user request from 'id=4 addr=127.0.0.1:52318 laddr=127.0.0.1:7105 fd=11 name=*redacted* user=*redacted* lib-name= lib-ver=').
+7105| 7:M 04 Nov 2026 03:28:15.537 * Successfully completed handshake with 975e0e2b84ba7127e635a0b266b6233f05751bb9 ()
+7105| 7:M 04 Nov 2026 03:28:15.537 * Mismatch in topology information for sender node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard fbbf8a1660e545cc5e966d44f893fc2adce2610c
+7105| 7:M 04 Nov 2026 03:28:15.900 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
+7105| 7:M 04 Nov 2026 03:28:15.901 * Mismatch in topology information for sender node 25148f0ba646354e00f60d94aa6d889ac12ff51d () in shard da1ad90b3c37e7c475f2e2d67b949b6b6c23c7bc
+7105| 7:M 04 Nov 2026 03:28:16.208 * Mismatch in topology information for sender node 55e129796c81b7b9c88a807729518a6194a2bfcc () in shard f84f90b50eff01ddfcd180d2633bd4dbb7f7c79f
+7105| 7:M 04 Nov 2026 03:28:16.208 * Cluster state changed: ok
+7105| 7:S 04 Nov 2026 03:28:17.500 * Connecting to PRIMARY 127.0.0.1:7103
+7105| 7:S 04 Nov 2026 03:28:17.500 * PRIMARY <-> REPLICA sync started
+7105| 7:S 04 Nov 2026 03:28:17.502 * Node e52544c8436e37c172206fed13ad2d311320c55d () is no longer primary of shard 1fb91edfa14733106f7cd0c005bc18ab8353cc86; removed all 0 slot(s) it used to own
+7105| 7:S 04 Nov 2026 03:28:17.502 * Node e52544c8436e37c172206fed13ad2d311320c55d () is now part of shard 0c703dacc68f516c2aa8cc09b522e05bdfc308a3
+7105| 7:S 04 Nov 2026 03:28:17.502 * Node e52544c8436e37c172206fed13ad2d311320c55d () is now a replica of node 25148f0ba646354e00f60d94aa6d889ac12ff51d () in shard 0c703dacc68f516c2aa8cc09b522e05bdfc308a3
+7105| 7:S 04 Nov 2026 03:28:17.502 * Non blocking connect for SYNC fired the event.
+7105| 7:S 04 Nov 2026 03:28:17.516 * Primary replied to PING, replication can continue...
+7105| 7:S 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is no longer primary of shard 7f3003b39b59221598d99e26790b214932dbc394; removed all 0 slot(s) it used to own
+7105| 7:S 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is now part of shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7105| 7:S 04 Nov 2026 03:28:17.516 * Node 332e7e707b72def2f8ba3c505dbc5b574d890581 () is now a replica of node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7105| 7:S 04 Nov 2026 03:28:17.525 * Partial resynchronization not possible (no cached primary)
+7105| 7:S 04 Nov 2026 03:28:22.521 * Full resync from primary: 88fb71a72e9099608af45c543dfc90f47a984931:0
+7105| 7:S 04 Nov 2026 03:28:22.522 * Replica main thread creating Bio thread to save RDB to disk
+7105| 7:S 04 Nov 2026 03:28:22.522 * Replica bio thread: PRIMARY <-> REPLICA sync: receiving streamed RDB from primary with EOF to disk
+7105| 7:S 04 Nov 2026 03:28:22.523 * Replica bio thread: Done downloading RDB
+7105| 7:S 04 Nov 2026 03:28:22.959 * Replica main thread detected RDB download completion in Bio thread
+7105| 7:S 04 Nov 2026 03:28:22.959 * Loading the RDB and finalizing primary-replica sync...
+7105| 7:S 04 Nov 2026 03:28:22.965 * PRIMARY <-> REPLICA sync: Flushing old data
+7105| 7:S 04 Nov 2026 03:28:22.966 * PRIMARY <-> REPLICA sync: Loading DB in memory
+7105| 7:S 04 Nov 2026 03:28:22.966 * Cleaning slot migration log in anticipation of a load operation.
+7105| 7:S 04 Nov 2026 03:28:22.966 * Loading RDB produced by Valkey version 9.0.6
+7105| 7:S 04 Nov 2026 03:28:22.966 * RDB age 0 seconds
+7105| 7:S 04 Nov 2026 03:28:22.966 * RDB memory usage when created 2.83 Mb
+7105| 7:S 04 Nov 2026 03:28:22.966 * Done loading RDB, keys loaded: 0, keys expired: 0.
+7105| 7:S 04 Nov 2026 03:28:22.966 * PRIMARY <-> REPLICA sync: Finished with success
+7105| 7:S 04 Nov 2026 03:28:36.638 * NODE 975e0e2b84ba7127e635a0b266b6233f05751bb9 () possibly failing.
+7105| 7:S 04 Nov 2026 03:28:37.044 * Marking node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () as failing (quorum reached).
+7105| 7:S 04 Nov 2026 03:28:37.044 # Cluster state changed: fail
+7105| 7:S 04 Nov 2026 03:28:37.044 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
+7105| 7:S 04 Nov 2026 03:28:37.420 * Reconfiguring node 332e7e707b72def2f8ba3c505dbc5b574d890581 () as primary for shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7105| 7:S 04 Nov 2026 03:28:37.420 * Mismatch in topology information for sender node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7105| 7:S 04 Nov 2026 03:28:37.420 * Cluster state changed: ok
+7105| 7:S 04 Nov 2026 03:28:41.827 * Mismatch in topology information for sender node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7105| 7:S 04 Nov 2026 03:28:41.837 * Node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () is now a replica of node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7105| 7:S 04 Nov 2026 03:28:41.893 * Clear FAIL state for node 975e0e2b84ba7127e635a0b266b6233f05751bb9 (): replica is reachable again.
+7106| 8:M 04 Nov 2026 03:28:14.645 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7106| 8:M 04 Nov 2026 03:28:14.645 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7106| 8:M 04 Nov 2026 03:28:14.645 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=8, just started
+7106| 8:M 04 Nov 2026 03:28:14.645 * Configuration loaded
+7106| 8:M 04 Nov 2026 03:28:14.645 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7106| 8:M 04 Nov 2026 03:28:14.645 * monotonic clock: POSIX clock_gettime
+7106| 8:M 04 Nov 2026 03:28:14.645 * Running mode=cluster, port=7106.
+7106| 8:M 04 Nov 2026 03:28:14.646 * No cluster configuration found, I'm 332e7e707b72def2f8ba3c505dbc5b574d890581
+7106| 8:M 04 Nov 2026 03:28:14.653 * Server initialized
+7106| 8:M 04 Nov 2026 03:28:14.653 * Ready to accept connections tcp
+7106| 8:M 04 Nov 2026 03:28:15.493 * configEpoch set to 6 via CLUSTER SET-CONFIG-EPOCH
+7106| 8:M 04 Nov 2026 03:28:15.495 * Cluster meet 127.0.0.1:7101 (user request from 'id=4 addr=127.0.0.1:36720 laddr=127.0.0.1:7106 fd=11 name=*redacted* user=*redacted* lib-name= lib-ver=').
+7106| 8:M 04 Nov 2026 03:28:15.638 * Successfully completed handshake with 975e0e2b84ba7127e635a0b266b6233f05751bb9 ()
+7106| 8:M 04 Nov 2026 03:28:15.638 * Mismatch in topology information for sender node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard 46d4895f4db90ff61639f762d14d374a280754ea
+7106| 8:M 04 Nov 2026 03:28:15.974 * Mismatch in topology information for sender node 25148f0ba646354e00f60d94aa6d889ac12ff51d () in shard 8f105b45d680cf3a1004ef52ec449828b4e67671
+7106| 8:M 04 Nov 2026 03:28:16.169 * Mismatch in topology information for sender node 55e129796c81b7b9c88a807729518a6194a2bfcc () in shard 3e4c83bf80f0f5e68eb690e80c43a0187e8a7411
+7106| 8:M 04 Nov 2026 03:28:16.672 * Cluster state changed: ok
+7106| 8:M 04 Nov 2026 03:28:17.500 * Node e52544c8436e37c172206fed13ad2d311320c55d () is no longer primary of shard 1fb91edfa14733106f7cd0c005bc18ab8353cc86; removed all 0 slot(s) it used to own
+7106| 8:M 04 Nov 2026 03:28:17.500 * Node e52544c8436e37c172206fed13ad2d311320c55d () is now part of shard 0c703dacc68f516c2aa8cc09b522e05bdfc308a3
+7106| 8:M 04 Nov 2026 03:28:17.500 * Node e52544c8436e37c172206fed13ad2d311320c55d () is now a replica of node 25148f0ba646354e00f60d94aa6d889ac12ff51d () in shard 0c703dacc68f516c2aa8cc09b522e05bdfc308a3
+7106| 8:S 04 Nov 2026 03:28:17.509 * Connecting to PRIMARY 127.0.0.1:7101
+7106| 8:S 04 Nov 2026 03:28:17.509 * PRIMARY <-> REPLICA sync started
+7106| 8:S 04 Nov 2026 03:28:17.509 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is no longer primary of shard a0931d3fb6bc76fd9ed2c37eb0b496063293b041; removed all 0 slot(s) it used to own
+7106| 8:S 04 Nov 2026 03:28:17.509 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is now part of shard b51ed74240e73de2a64c1e12473bd5ecc08b5ced
+7106| 8:S 04 Nov 2026 03:28:17.509 * Node 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () is now a replica of node 55e129796c81b7b9c88a807729518a6194a2bfcc () in shard b51ed74240e73de2a64c1e12473bd5ecc08b5ced
+7106| 8:S 04 Nov 2026 03:28:17.516 * Non blocking connect for SYNC fired the event.
+7106| 8:S 04 Nov 2026 03:28:17.516 * Primary replied to PING, replication can continue...
+7106| 8:S 04 Nov 2026 03:28:17.525 * Partial resynchronization not possible (no cached primary)
+7106| 8:S 04 Nov 2026 03:28:22.289 * Full resync from primary: 122c71de270343b6c6754d8980a6867db0a7bc8a:0
+7106| 8:S 04 Nov 2026 03:28:22.290 * Replica main thread creating Bio thread to save RDB to disk
+7106| 8:S 04 Nov 2026 03:28:22.290 * Replica bio thread: PRIMARY <-> REPLICA sync: receiving streamed RDB from primary with EOF to disk
+7106| 8:S 04 Nov 2026 03:28:22.291 * Replica bio thread: Done downloading RDB
+7106| 8:S 04 Nov 2026 03:28:22.718 * Replica main thread detected RDB download completion in Bio thread
+7106| 8:S 04 Nov 2026 03:28:22.718 * Loading the RDB and finalizing primary-replica sync...
+7106| 8:S 04 Nov 2026 03:28:22.725 * PRIMARY <-> REPLICA sync: Flushing old data
+7106| 8:S 04 Nov 2026 03:28:22.725 * PRIMARY <-> REPLICA sync: Loading DB in memory
+7106| 8:S 04 Nov 2026 03:28:22.725 * Cleaning slot migration log in anticipation of a load operation.
+7106| 8:S 04 Nov 2026 03:28:22.725 * Loading RDB produced by Valkey version 9.0.6
+7106| 8:S 04 Nov 2026 03:28:22.725 * RDB age 0 seconds
+7106| 8:S 04 Nov 2026 03:28:22.725 * RDB memory usage when created 2.81 Mb
+7106| 8:S 04 Nov 2026 03:28:22.725 * Done loading RDB, keys loaded: 0, keys expired: 0.
+7106| 8:S 04 Nov 2026 03:28:22.726 * PRIMARY <-> REPLICA sync: Finished with success
+7106| 8:S 04 Nov 2026 03:28:29.355 * Connection with primary lost.
+7106| 8:S 04 Nov 2026 03:28:29.355 * Caching the disconnected primary state.
+7106| 8:S 04 Nov 2026 03:28:29.355 * Reconnecting to PRIMARY 127.0.0.1:7101
+7106| 8:S 04 Nov 2026 03:28:29.356 * PRIMARY <-> REPLICA sync started
+7106| 8:S 04 Nov 2026 03:28:29.356 # Error condition on socket for SYNC: Connection reset by peer
+7106| 8:S 04 Nov 2026 03:28:29.779 * Connecting to PRIMARY 127.0.0.1:7101
+7106| 8:S 04 Nov 2026 03:28:29.779 * PRIMARY <-> REPLICA sync started
+7106| 8:S 04 Nov 2026 03:28:29.779 # Error condition on socket for SYNC: Connection refused
+7106| 8:S 04 Nov 2026 03:28:30.789 * Connecting to PRIMARY 127.0.0.1:7101
+7106| 8:S 04 Nov 2026 03:28:30.789 * PRIMARY <-> REPLICA sync started
+7106| 8:S 04 Nov 2026 03:28:30.789 # Error condition on socket for SYNC: Connection refused
+7106| 8:S 04 Nov 2026 03:28:31.802 * Connecting to PRIMARY 127.0.0.1:7101
+7106| 8:S 04 Nov 2026 03:28:31.802 * PRIMARY <-> REPLICA sync started
+7106| 8:S 04 Nov 2026 03:28:31.802 # Error condition on socket for SYNC: Connection refused
+7106| 8:S 04 Nov 2026 03:28:32.821 * Connecting to PRIMARY 127.0.0.1:7101
+7106| 8:S 04 Nov 2026 03:28:32.821 * PRIMARY <-> REPLICA sync started
+7106| 8:S 04 Nov 2026 03:28:32.821 # Error condition on socket for SYNC: Connection refused
+7106| 8:S 04 Nov 2026 03:28:33.833 * Connecting to PRIMARY 127.0.0.1:7101
+7106| 8:S 04 Nov 2026 03:28:33.833 * PRIMARY <-> REPLICA sync started
+7106| 8:S 04 Nov 2026 03:28:33.833 # Error condition on socket for SYNC: Connection refused
+7106| 8:S 04 Nov 2026 03:28:34.844 * Connecting to PRIMARY 127.0.0.1:7101
+7106| 8:S 04 Nov 2026 03:28:34.844 * PRIMARY <-> REPLICA sync started
+7106| 8:S 04 Nov 2026 03:28:34.844 # Error condition on socket for SYNC: Connection refused
+7106| 8:S 04 Nov 2026 03:28:35.853 * Connecting to PRIMARY 127.0.0.1:7101
+7106| 8:S 04 Nov 2026 03:28:35.853 * PRIMARY <-> REPLICA sync started
+7106| 8:S 04 Nov 2026 03:28:35.853 # Error condition on socket for SYNC: Connection refused
+7106| 8:S 04 Nov 2026 03:28:36.868 * Connecting to PRIMARY 127.0.0.1:7101
+7106| 8:S 04 Nov 2026 03:28:36.868 * PRIMARY <-> REPLICA sync started
+7106| 8:S 04 Nov 2026 03:28:36.868 * NODE 975e0e2b84ba7127e635a0b266b6233f05751bb9 () possibly failing.
+7106| 8:S 04 Nov 2026 03:28:36.868 # Error condition on socket for SYNC: Connection refused
+7106| 8:S 04 Nov 2026 03:28:37.046 * FAIL message received from 0c6fafd750a93beeeaa44079d14c62c175e9fdf0 () about 975e0e2b84ba7127e635a0b266b6233f05751bb9 ()
+7106| 8:S 04 Nov 2026 03:28:37.046 # Cluster state changed: fail
+7106| 8:S 04 Nov 2026 03:28:37.046 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
+7106| 8:S 04 Nov 2026 03:28:37.046 * Start of election delayed for 303 milliseconds (rank #0, primary rank #0, offset 43670763).
+7106| 8:S 04 Nov 2026 03:28:37.069 * Currently unable to failover: Waiting the delay before I can start a new failover.
+7106| 8:S 04 Nov 2026 03:28:37.372 * Starting a failover election for epoch 7, node config epoch is 1
+7106| 8:S 04 Nov 2026 03:28:37.384 * Failover election won: I'm the new primary.
+7106| 8:S 04 Nov 2026 03:28:37.384 * configEpoch set to 7 after successful failover
+7106| 8:S 04 Nov 2026 03:28:37.384 * Setting myself to primary in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829 after failover; my old primary is 975e0e2b84ba7127e635a0b266b6233f05751bb9 ()
+7106| 8:S 04 Nov 2026 03:28:37.384 * Reconfiguring node 332e7e707b72def2f8ba3c505dbc5b574d890581 () as primary for shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7106| 8:M 04 Nov 2026 03:28:37.384 * Discarding previously cached primary state.
+7106| 8:M 04 Nov 2026 03:28:37.384 * Setting secondary replication ID to 122c71de270343b6c6754d8980a6867db0a7bc8a, valid up to offset: 43670764. New replication ID is 2f6db0c91884b1a767c63b51509b57ee37ee7202
+7106| 8:M 04 Nov 2026 03:28:37.384 * Cluster state changed: ok
+7106| 8:M 04 Nov 2026 03:28:41.827 * Mismatch in topology information for sender node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7106| 8:M 04 Nov 2026 03:28:41.836 * Node 975e0e2b84ba7127e635a0b266b6233f05751bb9 () is now a replica of node 332e7e707b72def2f8ba3c505dbc5b574d890581 () in shard ea37bd11319a5e4dbec4353cd51eca6c32b62829
+7106| 8:M 04 Nov 2026 03:28:41.847 * Replica 127.0.0.1:7101 asks for synchronization
+7106| 8:M 04 Nov 2026 03:28:41.847 * Partial resynchronization not accepted: Replication ID mismatch (Replica asked for 'cd4701a7fc5878f2ee21be530a31a3d9b6b4529d', my replication IDs are '2f6db0c91884b1a767c63b51509b57ee37ee7202' and '122c71de270343b6c6754d8980a6867db0a7bc8a')
+7106| 8:M 04 Nov 2026 03:28:41.847 * Delay next BGSAVE for diskless SYNC
+7106| 8:M 04 Nov 2026 03:28:41.893 * Clear FAIL state for node 975e0e2b84ba7127e635a0b266b6233f05751bb9 (): replica is reachable again.
+7106| 8:M 04 Nov 2026 03:28:46.928 * Starting BGSAVE for SYNC with target: replicas sockets using: normal sync
+7106| 8:M 04 Nov 2026 03:28:46.929 * Background RDB transfer started by pid 20 to pipe through parent process
+7106| 20:C 04 Nov 2026 03:28:46.935 * Fork CoW for RDB: current 0 MB, peak 0 MB, average 0 MB
+7106| 8:M 04 Nov 2026 03:28:46.935 * Diskless rdb transfer, done reading from pipe, 1 replicas still up.
+7106| 8:M 04 Nov 2026 03:28:47.030 * Background RDB transfer terminated with success
+7106| 8:M 04 Nov 2026 03:28:47.030 * Streamed RDB transfer with replica 127.0.0.1:7101 succeeded (socket). Waiting for REPLCONF ACK from replica to enable streaming
+7106| 8:M 04 Nov 2026 03:28:47.030 * Synchronization with replica 127.0.0.1:7101 succeeded

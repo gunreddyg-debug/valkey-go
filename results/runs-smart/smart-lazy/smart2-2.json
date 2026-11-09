@@ -1,0 +1,489 @@
+{
+  "label": "smart2",
+  "run": 2,
+  "build": "smart2",
+  "options": {
+    "MaxSlotWait": "0s",
+    "MinRefreshInterval": "0s",
+    "ShardsRefreshInterval": "1s"
+  },
+  "args": [
+    "-fail-mode",
+    "kill",
+    "-fail-seconds",
+    "15",
+    "-fail-hold",
+    "3",
+    "-duration",
+    "25s",
+    "-shards-refresh",
+    "1s",
+    "-label",
+    "smart2",
+    "-run",
+    "2",
+    "-json",
+    "runs-smart/smart-lazy/smart2-2.json"
+  ],
+  "fail_kind": "primary",
+  "fail_mode": "kill",
+  "fail_seconds": 15,
+  "fail_hold_s": 3,
+  "goroutines": 200,
+  "duration_s": 25,
+  "run_length_s": 25.001138945,
+  "timeout_ms": 2000,
+  "addr": "127.0.0.1:16379",
+  "old_primary": "127.0.0.1:7101",
+  "slots": [
+    [
+      0,
+      5460
+    ]
+  ],
+  "fail_at_s": 5.304719072,
+  "restored_at_s": 20.586877671,
+  "requests": 4012579,
+  "ok": 4010359,
+  "err_no_slot": 0,
+  "err_deadline": 332,
+  "err_other": 1888,
+  "other_errors": [
+    {
+      "msg": "dial tcp 127.0.0.1:7101: connect: connection refused",
+      "count": 1778,
+      "first_at_s": 6.379962077
+    },
+    {
+      "msg": "read tcp 127.0.0.1:56982-\u003e127.0.0.1:7101: read: connection reset by peer",
+      "count": 110,
+      "first_at_s": 5.118330486
+    }
+  ],
+  "ops_per_s": 160407.05220759692,
+  "longest_ok_ms": 2001.041,
+  "longest_ok_started_at_s": 14.601711194,
+  "first_ok_after_fail_ms": 11294.773,
+  "first_err_at_s": 5.118330486,
+  "last_err_after_fail_ms": 11276.282,
+  "no_slot_from_ms": -1,
+  "no_slot_to_ms": -1,
+  "flagged_fail_line_ms": 7656.503,
+  "promote_line_ms": 10673.094,
+  "promoted_line_ms": -1,
+  "failed_over_line_ms": -1,
+  "promotion_ms": 10695.94,
+  "promotion_source": "watcher",
+  "promotion_to_first_ok_ms": 598.8329999999987,
+  "stale_route_ms": 0,
+  "last_moved_old_primary_ms": -1,
+  "latency_ok_all": {
+    "count": 4010359,
+    "p50_ms": 0.536,
+    "p99_ms": 3.04,
+    "p999_ms": 12.16,
+    "max_ms": 2031.616
+  },
+  "latency_ok_failure_window": {
+    "count": 328012,
+    "p50_ms": 0.492,
+    "p99_ms": 2.528,
+    "p999_ms": 14.464,
+    "max_ms": 2031.616
+  },
+  "latency_window_from_s": 5.304719072,
+  "latency_window_to_s": 17.599492072,
+  "cluster_shards_init": 1,
+  "cluster_shards_run": 52,
+  "cluster_shards_after_fail": 48,
+  "cluster_shards_in_no_primary_window": 10,
+  "cluster_shards_max_per_s": 5,
+  "cluster_shards_by_addr": {
+    "127.0.0.1:16379": 53
+  },
+  "cluster_shards_times_ms": [
+    331.213,
+    587.344,
+    839.085,
+    1124.177,
+    1375.218,
+    1628.414,
+    1879.744,
+    2131.835,
+    2383.75,
+    2636.237,
+    2887.841,
+    3139.916,
+    3392.23,
+    3643.479,
+    3895.336,
+    4146.954,
+    4398.758,
+    4650.381,
+    4901.914,
+    5153.628,
+    5404.826,
+    5656.552,
+    5907.56,
+    6158.432,
+    6409.652,
+    6660.634,
+    6911.962,
+    7164.574,
+    7415.411,
+    7666.523,
+    8580.697,
+    8632.261,
+    9453.924,
+    9506.527,
+    9558.138,
+    9610,
+    9661.641,
+    10559.728,
+    10661.833,
+    11284.965,
+    12018.666,
+    13660.306,
+    14132.094,
+    15194.305,
+    15726.625,
+    17547.447,
+    17814.84,
+    18966.138
+  ],
+  "cluster_shards_off_endpoint": 0,
+  "cluster_shards_off_endpoint_run": 0,
+  "cluster_shards_off_endpoint_times_ms": null,
+  "getslotmigrations_by_addr": {},
+  "getslotmigrations_run": 0,
+  "getslotmigrations_after_fail": 0,
+  "dials": {
+    "127.0.0.1:16379": 1,
+    "127.0.0.1:7101": 8273,
+    "127.0.0.1:7104": 1
+  },
+  "dial_errors": {
+    "127.0.0.1:7101": 8272
+  },
+  "bytes_by_addr_run": {
+    "127.0.0.1:16379": 1508,
+    "127.0.0.1:7101": 64502895,
+    "127.0.0.1:7104": 116451460
+  },
+  "server_errors": {
+    "totals": {},
+    "by_node": {},
+    "last_at_s": {},
+    "restarts": {
+      "127.0.0.1:7101": 1
+    },
+    "read_errors": {
+      "127.0.0.1:7101": 156
+    },
+    "per_second": {},
+    "poll_interval_ms": 100
+  },
+  "server_moved": 0,
+  "server_ask": 0,
+  "topology": {
+    "fail_flag_seen_ms": 7655.977,
+    "no_primary_start_ms": 7655.977,
+    "no_primary_end_ms": 10716.177,
+    "no_primary_window_ms": 3060.2,
+    "no_primary_polls": 276,
+    "promoted_ms": 10695.94,
+    "new_primary": "127.0.0.1:7104",
+    "polls": 1816,
+    "nodes_reporting_no_primary": 5
+  },
+  "timeline": [
+    {
+      "t": 0,
+      "ok": 265148,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 1,
+      "ok": 290591,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 2,
+      "ok": 281199,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 3,
+      "ok": 268379,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 4,
+      "ok": 292309,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 5,
+      "ok": 31796,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 110,
+      "cluster_shards": 2,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 6,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 394,
+      "cluster_shards": 4,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 7,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 56,
+      "cluster_shards": 4,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 8,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 350,
+      "cluster_shards": 4,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 9,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 260,
+      "cluster_shards": 4,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 10,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 174,
+      "cluster_shards": 4,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 11,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 350,
+      "cluster_shards": 4,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 12,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 194,
+      "cluster_shards": 4,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 13,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 103,
+      "other": 0,
+      "cluster_shards": 2,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 14,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 97,
+      "other": 0,
+      "cluster_shards": 5,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 15,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 102,
+      "other": 0,
+      "cluster_shards": 2,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 16,
+      "ok": 112343,
+      "no_slot": 0,
+      "deadline": 30,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 17,
+      "ok": 322217,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 18,
+      "ok": 307070,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 19,
+      "ok": 314748,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 20,
+      "ok": 286927,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 21,
+      "ok": 298484,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 22,
+      "ok": 306530,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 23,
+      "ok": 312959,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 24,
+      "ok": 318910,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 25,
+      "ok": 749,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 26,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 27,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    }
+  ],
+  "script_output": [
+    "[t= 5.305s] FAILED port=7101 mode=kill container=lf-valkey-7101",
+    "[t= 5.308s] [03:51:36] kill lf-valkey-7101 (primary of slot 0) for 15s, promotion of replica 7104 held 3s after the fail flag",
+    "[t=12.961s] FLAGGED_FAIL port=7101",
+    "[t=15.978s] PROMOTE replica=7104 reply=OK",
+    "[t=20.587s] RESTORED port=7101",
+    "[t=20.682s] [03:51:52] restored lf-valkey-7101; slot 0 is now owned by port 7104"
+  ]
+}

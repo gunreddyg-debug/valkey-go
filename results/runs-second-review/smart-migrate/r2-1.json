@@ -1,0 +1,442 @@
+{
+  "label": "r2",
+  "run": 1,
+  "build": "r2",
+  "options": {
+    "MaxRefreshDelay": "0s",
+    "MinRefreshInterval": "0s",
+    "ShardsRefreshInterval": "10s"
+  },
+  "args": [
+    "-fail-kind",
+    "migrate",
+    "-migrate-slots",
+    "0-199",
+    "-key-slots",
+    "0-199",
+    "-after-migrate",
+    "10s",
+    "-duration",
+    "60s",
+    "-errorstats-poll",
+    "20ms",
+    "-label",
+    "r2",
+    "-run",
+    "1",
+    "-json",
+    "runs-r2/smart-migrate/r2-1.json"
+  ],
+  "fail_kind": "migrate",
+  "fail_mode": "migrate",
+  "fail_seconds": 0,
+  "fail_hold_s": 0,
+  "goroutines": 200,
+  "duration_s": 60,
+  "run_length_s": 15.224355608,
+  "timeout_ms": 2000,
+  "addr": "127.0.0.1:16379",
+  "old_primary": "127.0.0.1:7101",
+  "slots": [
+    [
+      0,
+      5460
+    ]
+  ],
+  "key_slots": "0-199",
+  "fail_at_s": 5.001624648,
+  "restored_at_s": 5.21999878,
+  "requests": 5108757,
+  "ok": 5108757,
+  "err_no_slot": 0,
+  "err_deadline": 0,
+  "err_other": 0,
+  "other_errors": null,
+  "ops_per_s": 335564.7445147355,
+  "longest_ok_ms": 61.758,
+  "longest_ok_started_at_s": 5.166907999,
+  "first_ok_after_fail_ms": 0.992,
+  "first_err_at_s": -1,
+  "last_err_after_fail_ms": -1,
+  "no_slot_from_ms": -1,
+  "no_slot_to_ms": -1,
+  "flagged_fail_line_ms": -1,
+  "promote_line_ms": -1,
+  "promoted_line_ms": -1,
+  "failed_over_line_ms": -1,
+  "promotion_ms": 220.72,
+  "promotion_source": "watcher",
+  "promotion_to_first_ok_ms": -219.728,
+  "stale_route_ms": 0,
+  "last_moved_old_primary_ms": 1.839,
+  "latency_ok_all": {
+    "count": 5108757,
+    "p50_ms": 0.536,
+    "p99_ms": 1.744,
+    "p999_ms": 2.528,
+    "max_ms": 62.464
+  },
+  "latency_ok_failure_window": {
+    "count": 408401,
+    "p50_ms": 0.552,
+    "p99_ms": 1.808,
+    "p999_ms": 2.656,
+    "max_ms": 62.464
+  },
+  "latency_window_from_s": 5.001624648,
+  "latency_window_to_s": 6.222344648,
+  "cluster_shards_init": 1,
+  "cluster_shards_run": 2,
+  "cluster_shards_after_fail": 2,
+  "cluster_shards_in_no_primary_window": 0,
+  "cluster_shards_max_per_s": 1,
+  "cluster_shards_by_addr": {
+    "127.0.0.1:16379": 3
+  },
+  "cluster_shards_times_ms": [
+    223.596,
+    5001.228
+  ],
+  "cluster_shards_off_endpoint": 0,
+  "cluster_shards_off_endpoint_run": 0,
+  "cluster_shards_off_endpoint_times_ms": null,
+  "getslotmigrations_by_addr": {},
+  "getslotmigrations_run": 0,
+  "getslotmigrations_after_fail": 0,
+  "dials": {
+    "127.0.0.1:16379": 1,
+    "127.0.0.1:7101": 1,
+    "127.0.0.1:7103": 1
+  },
+  "dial_errors": {},
+  "bytes_by_addr_run": {
+    "127.0.0.1:16379": 226,
+    "127.0.0.1:7101": 81496530,
+    "127.0.0.1:7103": 155348038
+  },
+  "server_errors": {
+    "totals": {
+      "MOVED": 200
+    },
+    "by_node": {
+      "127.0.0.1:7101": {
+        "MOVED": 200
+      }
+    },
+    "last_at_s": {
+      "127.0.0.1:7101": {
+        "MOVED": 5.224184269
+      }
+    },
+    "per_second": {
+      "MOVED": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        200,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "poll_interval_ms": 20
+  },
+  "server_moved": 200,
+  "server_ask": 0,
+  "migration": {
+    "source": "127.0.0.1:7101",
+    "target": "127.0.0.1:7103",
+    "target_id": "0328c0e40e73c7780d9153c45e9fb7e8d0c60275",
+    "slots": [
+      0,
+      199
+    ],
+    "start_s": 5.001624648,
+    "accepted_ms": 0.823,
+    "reply": "OK",
+    "job": "70387603ad5928ccae062c384994407877cd344d",
+    "success_ms": 218.374,
+    "target_success_ms": 208.156,
+    "handover_ms": 208.156,
+    "states": [
+      {
+        "ms": 0.94,
+        "node": "127.0.0.1:7101",
+        "state": "reading-establish-response"
+      },
+      {
+        "ms": 1.58,
+        "node": "127.0.0.1:7103",
+        "state": "waiting-for-ack"
+      },
+      {
+        "ms": 6.967,
+        "node": "127.0.0.1:7101",
+        "state": "waiting-to-snapshot"
+      },
+      {
+        "ms": 7.596,
+        "node": "127.0.0.1:7103",
+        "state": "receiving-snapshot"
+      },
+      {
+        "ms": 64.963,
+        "node": "127.0.0.1:7101",
+        "state": "snapshotting"
+      },
+      {
+        "ms": 72.063,
+        "node": "127.0.0.1:7103",
+        "state": "waiting-for-paused"
+      },
+      {
+        "ms": 77.513,
+        "node": "127.0.0.1:7101",
+        "state": "waiting-to-pause"
+      },
+      {
+        "ms": 171.312,
+        "node": "127.0.0.1:7101",
+        "state": "failover-paused"
+      },
+      {
+        "ms": 207.864,
+        "node": "127.0.0.1:7101",
+        "state": "failover-granted"
+      },
+      {
+        "ms": 208.156,
+        "node": "127.0.0.1:7103",
+        "state": "success"
+      },
+      {
+        "ms": 218.374,
+        "node": "127.0.0.1:7101",
+        "state": "success"
+      }
+    ],
+    "polls": 36,
+    "handover_seen_ms": 220.72,
+    "route_converged_ms": 0,
+    "source_bytes_after_handover": 126,
+    "last_moved_ms": 14.403
+  },
+  "topology": {
+    "fail_flag_seen_ms": -1,
+    "no_primary_start_ms": -1,
+    "no_primary_end_ms": -1,
+    "no_primary_window_ms": -1,
+    "no_primary_polls": 0,
+    "promoted_ms": 220.72,
+    "new_primary": "127.0.0.1:7103",
+    "polls": 1021,
+    "nodes_reporting_no_primary": 0
+  },
+  "timeline": [
+    {
+      "t": 0,
+      "ok": 337147,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 1,
+      "ok": 339713,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 2,
+      "ok": 341283,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 3,
+      "ok": 346710,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 4,
+      "ok": 340013,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 5,
+      "ok": 305334,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 200,
+      "server_ask": 0
+    },
+    {
+      "t": 6,
+      "ok": 307643,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 7,
+      "ok": 347819,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 8,
+      "ok": 343492,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 9,
+      "ok": 345951,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 10,
+      "ok": 346762,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 1,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 11,
+      "ok": 341491,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 12,
+      "ok": 345266,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 13,
+      "ok": 344423,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 14,
+      "ok": 299555,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 15,
+      "ok": 76155,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 16,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    },
+    {
+      "t": 17,
+      "ok": 0,
+      "no_slot": 0,
+      "deadline": 0,
+      "other": 0,
+      "cluster_shards": 0,
+      "server_moved": 0,
+      "server_ask": 0
+    }
+  ],
+  "script_output": [
+    "[t= 5.002s] MIGRATESLOTS SLOTSRANGE 0 199 NODE 0328c0e40e73c7780d9153c45e9fb7e8d0c60275 (127.0.0.1:7103) on 127.0.0.1:7101: OK",
+    "[t= 5.003s] migration 70387603ad5928ccae062c384994407877cd344d on the source 127.0.0.1:7101: reading-establish-response ",
+    "[t= 5.003s] migration 70387603ad5928ccae062c384994407877cd344d on the target 127.0.0.1:7103: waiting-for-ack ",
+    "[t= 5.009s] migration 70387603ad5928ccae062c384994407877cd344d on the source 127.0.0.1:7101: waiting-to-snapshot ",
+    "[t= 5.010s] migration 70387603ad5928ccae062c384994407877cd344d on the target 127.0.0.1:7103: receiving-snapshot ",
+    "[t= 5.068s] migration 70387603ad5928ccae062c384994407877cd344d on the source 127.0.0.1:7101: snapshotting ",
+    "[t= 5.074s] migration 70387603ad5928ccae062c384994407877cd344d on the target 127.0.0.1:7103: waiting-for-paused ",
+    "[t= 5.079s] migration 70387603ad5928ccae062c384994407877cd344d on the source 127.0.0.1:7101: waiting-to-pause ",
+    "[t= 5.173s] migration 70387603ad5928ccae062c384994407877cd344d on the source 127.0.0.1:7101: failover-paused ",
+    "[t= 5.210s] migration 70387603ad5928ccae062c384994407877cd344d on the source 127.0.0.1:7101: failover-granted ",
+    "[t= 5.215s] migration 70387603ad5928ccae062c384994407877cd344d on the target 127.0.0.1:7103: success ",
+    "[t= 5.224s] migration 70387603ad5928ccae062c384994407877cd344d on the source 127.0.0.1:7101: success "
+  ]
+}

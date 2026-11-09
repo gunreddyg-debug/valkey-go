@@ -1,0 +1,58 @@
+# Local emulation of a Memorystore for Valkey cluster: 3 primaries + 3 replicas on host networking
+# (ports 7101-7106, cluster bus 17101-17106) and one discovery endpoint (HAProxy, 127.0.0.1:16379).
+# Use ./up.sh and ./down.sh rather than calling docker compose directly: up.sh also creates the cluster.
+name: local-failover
+
+x-valkey: &valkey
+  image: valkey/valkey:9.0.6 # Valkey 9.0.6, digest sha256:63346cb24a61221e76bdf41acce99b3968a9fa83d8122144deab45394b27b4f2
+  network_mode: host
+  restart: "no" # fail-primary.sh MODE=kill restarts the killed node itself
+
+services:
+  valkey-7101:
+    <<: *valkey
+    container_name: lf-valkey-7101
+    command: ["valkey-server", "/usr/local/etc/valkey/valkey.conf", "--port", "7101"]
+    volumes: ["./valkey.conf:/usr/local/etc/valkey/valkey.conf:ro", "data-7101:/data"]
+  valkey-7102:
+    <<: *valkey
+    container_name: lf-valkey-7102
+    command: ["valkey-server", "/usr/local/etc/valkey/valkey.conf", "--port", "7102"]
+    volumes: ["./valkey.conf:/usr/local/etc/valkey/valkey.conf:ro", "data-7102:/data"]
+  valkey-7103:
+    <<: *valkey
+    container_name: lf-valkey-7103
+    command: ["valkey-server", "/usr/local/etc/valkey/valkey.conf", "--port", "7103"]
+    volumes: ["./valkey.conf:/usr/local/etc/valkey/valkey.conf:ro", "data-7103:/data"]
+  valkey-7104:
+    <<: *valkey
+    container_name: lf-valkey-7104
+    command: ["valkey-server", "/usr/local/etc/valkey/valkey.conf", "--port", "7104"]
+    volumes: ["./valkey.conf:/usr/local/etc/valkey/valkey.conf:ro", "data-7104:/data"]
+  valkey-7105:
+    <<: *valkey
+    container_name: lf-valkey-7105
+    command: ["valkey-server", "/usr/local/etc/valkey/valkey.conf", "--port", "7105"]
+    volumes: ["./valkey.conf:/usr/local/etc/valkey/valkey.conf:ro", "data-7105:/data"]
+  valkey-7106:
+    <<: *valkey
+    container_name: lf-valkey-7106
+    command: ["valkey-server", "/usr/local/etc/valkey/valkey.conf", "--port", "7106"]
+    volumes: ["./valkey.conf:/usr/local/etc/valkey/valkey.conf:ro", "data-7106:/data"]
+
+  discovery:
+    image: haproxy:3.2-alpine # digest sha256:254e6370f01cd654e0744edf607c67f33777c1b6a9dc0d4b28bcba7171460122
+    container_name: lf-haproxy
+    network_mode: host
+    restart: "no"
+    volumes: ["./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro"]
+    depends_on: [valkey-7101, valkey-7102, valkey-7103, valkey-7104, valkey-7105, valkey-7106]
+
+volumes:
+  data-7101:
+  data-7102:
+  data-7103:
+  data-7104:
+  data-7105:
+  data-7106:
+

@@ -1,0 +1,26 @@
+# Holistic defaults: MaxRefreshDelay samples on the final code (final7 = 1f2afc9; final7big = same + 1000-node emulation)
+smart-planned s7 1 150 bench-ar/bin/bench-final7 -fail-kind planned -duration 20s
+smart-planned s7d50 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 50ms -fail-kind planned -duration 20s
+smart-planned s7d250 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 250ms -fail-kind planned -duration 20s
+smart-pause s7 1 150 bench-ar/bin/bench-final7 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause s7d50 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 50ms -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause s7d250 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 250ms -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-big-pause b7 1 200 bench-ar/bin/bench-final7big -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-pause b7d1s 1 200 bench-ar/bin/bench-final7big -max-refresh-delay 1s -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-steady b7 1 120 bench-ar/bin/bench-final7big -shards-refresh 1s -no-fail -duration 20s
+smart-big-steady lmain 1 120 bench-ar/bin/bench-m2vd -max-refresh-delay 30s -shards-refresh 1s -no-fail -duration 20s
+smart-planned f_s7 1 150 bench-ar/bin/bench-final7 -fail-kind planned -duration 20s -clients 20
+smart-planned f_s7d50 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 50ms -fail-kind planned -duration 20s -clients 20
+smart-planned f_s7d250 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 250ms -fail-kind planned -duration 20s -clients 20
+smart-kill s7 1 150 bench-ar/bin/bench-final7 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill s7d50 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 50ms -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-planned s7 2 150 bench-ar/bin/bench-final7 -fail-kind planned -duration 20s
+smart-planned s7d50 2 150 bench-ar/bin/bench-final7 -max-refresh-delay 50ms -fail-kind planned -duration 20s
+smart-planned s7d250 2 150 bench-ar/bin/bench-final7 -max-refresh-delay 250ms -fail-kind planned -duration 20s
+smart-pause s7 2 150 bench-ar/bin/bench-final7 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause s7d250 2 150 bench-ar/bin/bench-final7 -max-refresh-delay 250ms -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-big-pause b7 2 200 bench-ar/bin/bench-final7big -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-pause b7d1s 2 200 bench-ar/bin/bench-final7big -max-refresh-delay 1s -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-pause b7d250 1 200 bench-ar/bin/bench-final7big -max-refresh-delay 250ms -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-kill b7 1 200 bench-ar/bin/bench-final7big -fail-mode kill -fail-seconds 30 -fail-hold 0 -duration 50s
+steady s7 1 120 bench-ar/bin/bench-final7 -no-fail -duration 20s

@@ -1,0 +1,54 @@
+bench: label=main run=3 build=m2 options=map[ShardsRefreshInterval:10s]
+bench: 200 goroutines, 25s, 2s per request, 1000 keys in slots [[0 5460]] of primary 127.0.0.1:7101; kill at t=5s for 15s, promotion held 3s
+fail-primary.sh: [t= 5.380s] FAILED port=7101 mode=kill container=lf-valkey-7101
+fail-primary.sh: [t= 5.382s] [03:45:23] kill lf-valkey-7101 (primary of slot 0) for 15s, promotion of replica 7106 held 3s after the fail flag
+fail-primary.sh: [t=12.403s] FLAGGED_FAIL port=7101
+fail-primary.sh: [t=15.421s] PROMOTE replica=7106 reply=OK
+fail-primary.sh: [t=20.660s] RESTORED port=7101
+fail-primary.sh: [t=20.693s] [03:45:38] restored lf-valkey-7101; slot 0 is now owned by port 7106
+
+=== result label=main run=3 build=m2 options=map[ShardsRefreshInterval:10s] mode=kill hold=3s ===
+failed primary 127.0.0.1:7101 (slots [[0 5460]]): failure at t=5.380s, restored at t=20.660s
+requests 4814257: ok 4257132, ErrNoSlot 555356, context deadline 0, other 1769
+  other     1658  first at t=6.341s  dial tcp 127.0.0.1:7101: connect: connection refused
+  other      111  first at t=5.121s  read tcp 127.0.0.1:44740->127.0.0.1:7101: read: connection reset by peer
+longest success 21.5ms (started at t=19.842s); first success after the failure +10.094s; errors from t=5.121s to +10.086s after the failure; ErrNoSlot from +7.263s to +10.086s
+CLUSTER SHARDS sent: 1 while creating the client, 3225 during the run, 3225 after the failure, 3183 in the no-primary window, max 1159/s; by address map[127.0.0.1:16379:3226]
+CLUSTER SHARDS times after the failure (s): +0.183 +0.824 +1.195 +1.922 +2.765 +2.883 +3.052 +3.538 +4.529 +5.382 +6.257 +6.260 +6.555 +7.261 +7.263 +7.264 +7.265 +7.265 +7.265 +7.266 +7.267 +7.267 +7.268 +7.268 +7.269 +7.270 +7.271 +7.272 +7.272 +7.273 +7.275 +7.277 +7.277 +7.278 +7.278 +7.279 +7.280 +7.281 +7.281 +7.282 ... (3185 more)
+CLUSTER SHARDS to other addresses than the discovery endpoint 127.0.0.1:16379: 0 (0 during the run); CLUSTER GETSLOTMIGRATIONS: 0 during the run, by address map[]
+dials: 127.0.0.1:16379=1 127.0.0.1:7101=7796(7795 failed) 127.0.0.1:7106=1
+topology (CLUSTER SHARDS on every node every 100ms): old primary flagged fail +6.961s; no online primary from +6.961s to +10.061s (3100ms, 279 polls on 5 nodes); new primary 127.0.0.1:7106 +10.061s
+promotion +10.061s (watcher; PROMOTE line +10.042s, FLAGGED_FAIL line +7.024s); promotion → first success +0.033s; client traffic to the old primary until +0.000s after the promotion, its last MOVED never after it
+server errors (INFO errorstats, all nodes, before → after the run): MOVED 0, ASK 0, other map[]; restarts map[127.0.0.1:7101:1]
+latency of successes: run n=4257132 p50 0.536ms p99 3.104ms p999 12.160ms max 21.5ms; 170284 ops/s over 25.0s
+latency of successes in the failure window t=5.4s..16.5s: n=294754 p50 0.536ms p99 3.360ms p999 11.648ms max 17.4ms
+timeline (by request end time):
+     t        ok  ErrNoSlot   deadline      other  CLUSTER_SHARDS  MOVED(srv)  ASK(srv)
+    0s    285346          0          0          0          0           0         0
+    1s    275706          0          0          0          0           0         0
+    2s    273993          0          0          0          0           0         0
+    3s    280882          0          0          0          0           0         0
+    4s    288849          0          0          0          0           0         0
+    5s     34617          0          0        111          1           0         0
+    6s         0          0          0        384          2           0         0
+    7s         0          0          0         70          1           0         0
+    8s         0          0          0        346          4           0         0
+    9s         0          0          0        263          1           0         0
+   10s         0          0          0        169          1           0         0
+   11s         0          0          0        346          3           0         0
+   12s         0      23077          0         80        372           0         0
+   13s         0     202771          0          0       1159           0         0
+   14s         0     220175          0          0       1120           0         0
+   15s    139310     109333          0          0        560           0         0
+   16s    285491          0          0          0          0           0         0
+   17s    303527          0          0          0          0           0         0
+   18s    306022          0          0          0          0           0         0
+   19s    297408          0          0          0          0           0         0
+   20s    292362          0          0          0          1           0         0
+   21s    312944          0          0          0          0           0         0
+   22s    298524          0          0          0          0           0         0
+   23s    281497          0          0          0          0           0         0
+   24s    300345          0          0          0          0           0         0
+   25s       309          0          0          0          0           0         0
+   26s         0          0          0          0          0           0         0
+   27s         0          0          0          0          0           0         0

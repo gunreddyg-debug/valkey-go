@@ -1,0 +1,12 @@
+# Final commit with every option at its default (4ae881e): confirm the samples
+smart-planned s8 1 150 bench-ar/bin/bench-final8 -fail-kind planned -duration 20s
+smart-kill s8 1 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-planned f_s8 1 150 bench-ar/bin/bench-final8 -fail-kind planned -duration 20s -clients 20
+smart-hold3 s8 1 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-pause s8 1 150 bench-ar/bin/bench-final8 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-fleet f_s8 1 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -clients 20
+smart-lazy s8 1 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s -shards-refresh 1s
+smart-planned s8 2 150 bench-ar/bin/bench-final8 -fail-kind planned -duration 20s
+smart-kill s8 2 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-pause s8 2 150 bench-ar/bin/bench-final8 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+steady s8 1 120 bench-ar/bin/bench-final8 -no-fail -duration 20s

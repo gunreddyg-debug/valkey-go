@@ -1,0 +1,113 @@
+[03:22:35] removing containers and volumes
+[03:22:35] down
+[03:22:35] starting containers
+ Volume local-failover_data-7101 Creating 
+ Volume local-failover_data-7106 Creating 
+ Volume local-failover_data-7101 Creating 
+ Volume local-failover_data-7103 Creating 
+ Volume local-failover_data-7105 Creating 
+ Volume local-failover_data-7105 Creating 
+ Volume local-failover_data-7102 Creating 
+ Volume local-failover_data-7102 Creating 
+ Volume local-failover_data-7106 Creating 
+ Volume local-failover_data-7103 Creating 
+ Volume local-failover_data-7104 Creating 
+ Volume local-failover_data-7104 Creating 
+ Volume local-failover_data-7105 Created 
+ Volume local-failover_data-7105 Created 
+ Container lf-valkey-7105 Creating 
+ Volume local-failover_data-7102 Created 
+ Volume local-failover_data-7102 Created 
+ Container lf-valkey-7102 Creating 
+ Volume local-failover_data-7103 Created 
+ Volume local-failover_data-7103 Created 
+ Container lf-valkey-7103 Creating 
+ Volume local-failover_data-7101 Created 
+ Volume local-failover_data-7101 Created 
+ Container lf-valkey-7101 Creating 
+ Volume local-failover_data-7106 Created 
+ Volume local-failover_data-7106 Created 
+ Container lf-valkey-7106 Creating 
+ Volume local-failover_data-7104 Created 
+ Volume local-failover_data-7104 Created 
+ Container lf-valkey-7104 Creating 
+ Container lf-valkey-7104 Created 
+ Container lf-valkey-7103 Created 
+ Container lf-valkey-7102 Created 
+ Container lf-valkey-7105 Created 
+ Container lf-valkey-7101 Created 
+ Container lf-valkey-7106 Created 
+ Container lf-haproxy Creating 
+ Container lf-haproxy Created 
+ Container lf-valkey-7104 Starting 
+ Container lf-valkey-7105 Starting 
+ Container lf-valkey-7103 Starting 
+ Container lf-valkey-7106 Starting 
+ Container lf-valkey-7102 Starting 
+ Container lf-valkey-7101 Starting 
+ Container lf-valkey-7104 Started 
+ Container lf-valkey-7105 Started 
+ Container lf-valkey-7103 Started 
+ Container lf-valkey-7106 Started 
+ Container lf-valkey-7102 Started 
+ Container lf-valkey-7101 Started 
+ Container lf-haproxy Starting 
+ Container lf-haproxy Started 
+[03:22:37] creating the cluster
+>>> Performing hash slots allocation on 6 nodes...
+Master[0] -> Slots 0 - 5460
+Master[1] -> Slots 5461 - 10922
+Master[2] -> Slots 10923 - 16383
+Adding replica 127.0.0.1:7105 to 127.0.0.1:7101
+Adding replica 127.0.0.1:7106 to 127.0.0.1:7102
+Adding replica 127.0.0.1:7104 to 127.0.0.1:7103
+>>> Trying to optimize slaves allocation for anti-affinity
+[WARNING] Some slaves are in the same host as their master
+M: 985755b75f6279147ef1b69d0909e4c681fb18d9 127.0.0.1:7101
+   slots:[0-5460] (5461 slots) master
+M: bef3405cd4b697f7996773e56b14e33924d9f45d 127.0.0.1:7102
+   slots:[5461-10922] (5462 slots) master
+M: a9c78347e6e4d001badc698b62c7f405efdd3931 127.0.0.1:7103
+   slots:[10923-16383] (5461 slots) master
+S: 043102ab1310c8b331522cf91fe7c9416bf31395 127.0.0.1:7104
+   replicates 985755b75f6279147ef1b69d0909e4c681fb18d9
+S: 9d1136e0b2887cc9f4f38f8d109b4d1dedf9f5d7 127.0.0.1:7105
+   replicates bef3405cd4b697f7996773e56b14e33924d9f45d
+S: 06936ec40a20c7382b5d980d07bee416b8b5e840 127.0.0.1:7106
+   replicates a9c78347e6e4d001badc698b62c7f405efdd3931
+>>> Nodes configuration updated
+>>> Assign a different config epoch to each node
+>>> Sending CLUSTER MEET messages to join the cluster
+Waiting for the cluster to join
+.
+>>> Performing Cluster Check (using node 127.0.0.1:7101)
+M: 985755b75f6279147ef1b69d0909e4c681fb18d9 127.0.0.1:7101
+   slots:[0-5460] (5461 slots) master
+   1 additional replica(s)
+M: a9c78347e6e4d001badc698b62c7f405efdd3931 127.0.0.1:7103
+   slots:[10923-16383] (5461 slots) master
+   1 additional replica(s)
+M: bef3405cd4b697f7996773e56b14e33924d9f45d 127.0.0.1:7102
+   slots:[5461-10922] (5462 slots) master
+   1 additional replica(s)
+S: 043102ab1310c8b331522cf91fe7c9416bf31395 127.0.0.1:7104
+   slots: (0 slots) slave
+   replicates 985755b75f6279147ef1b69d0909e4c681fb18d9
+S: 06936ec40a20c7382b5d980d07bee416b8b5e840 127.0.0.1:7106
+   slots: (0 slots) slave
+   replicates a9c78347e6e4d001badc698b62c7f405efdd3931
+S: 9d1136e0b2887cc9f4f38f8d109b4d1dedf9f5d7 127.0.0.1:7105
+   slots: (0 slots) slave
+   replicates bef3405cd4b697f7996773e56b14e33924d9f45d
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+[03:22:39] waiting for cluster_state:ok and replica sync
+[03:22:45] cluster healthy; discovery endpoint 127.0.0.1:16379
+  127.0.0.1:7101   myself,master          0-5460
+  127.0.0.1:7102   master                 5461-10922
+  127.0.0.1:7103   master                 10923-16383
+  127.0.0.1:7104   slave                 
+  127.0.0.1:7105   slave                 
+  127.0.0.1:7106   slave                 

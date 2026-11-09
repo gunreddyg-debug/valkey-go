@@ -1,0 +1,228 @@
+package valkey
+
+// Large-cluster client recovery simulation (not part of the PR; copied into the package only to run it).
+//
+//	LARGESIM=1 GOMAXPROCS=4 go test -run TestLargeClusterSim -v -timeout 60m .
+//
+// It drives the real cluster client (pick, waitSlots, lazyRefresh, the singleflight, MOVED handling) against the
+// mocked cluster of the refresh tests (swCluster: CLUSTER SHARDS through one discovery endpoint, like Memorystore)
+// with topologies of N nodes (N/2 shards of a primary and a replica). Per trial: 50 goroutines read keys of shard
+// 0 with 2 s deadlines; the primary of shard 0 crashes at a random time (its connections fail to dial), the
+// cluster flags it failed DETECT later (the shard has no online primary) and promotes its replica ELECT later.
+// It reports the time from the promotion to the first successful read (the client's own part of the recovery),
+// the reads that failed with ErrNoSlot, and the refreshes. It also times one topology refresh per size.
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"math/rand"
+	"os"
+	"sort"
+	"strconv"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+)
+
+func lsTopology(nodes int, failed, promoted bool) []swShard {
+	shards := nodes / 2
+	per := 16384 / shards
+	out := make([]swShard, 0, shards)
+	for i := 0; i < shards; i++ {
+		from, to := int64(i*per), int64((i+1)*per-1)
+		if i == shards-1 {
+			to = 16383
+		}
+		p := "10.1." + strconv.Itoa(i/250) + "." + strconv.Itoa(i%250) + ":6379"
+		r := "10.2." + strconv.Itoa(i/250) + "." + strconv.Itoa(i%250) + ":6379"
+		ns := []swNode{swPrimary(p), swReplica(r)}
+		if i == 0 && failed && !promoted {
+			ns = []swNode{{addr: p, role: "master", health: "fail"}, swReplica(r)}
+		}
+		if i == 0 && promoted {
+			ns = []swNode{swPrimary(r), {addr: p, role: "replica", health: "fail"}}
+		}
+		out = append(out, swShard{from: from, to: to, nodes: ns})
+	}
+	return out
+}
+
+type lsResult struct {
+	recovery time.Duration // promotion -> first success; -1 if none before the horizon
+	noSlot   int64
+	shards   int
+	peak     int
+}
+
+func lsTrial(t *testing.T, nodes int, opt ClusterOption, detect, elect time.Duration, horizon time.Duration) lsResult {
+	m := newSWCluster(lsTopology(nodes, false, false))
+	client := newSWClient(t, m, opt)
+	defer client.Close()
+	per := 16384 / (nodes / 2)
+	keys := swKeysInSlots(200, 0, uint16(per-1))
+	primary0 := "10.1.0.0:6379"
+
+	start := time.Now()
+	crashAt := 200*time.Millisecond + time.Duration(rand.Int63n(int64(500*time.Millisecond)))
+	failAt := crashAt + detect
+	promoteAt := failAt + elect
+	var promoted atomic.Int64 // unix nanos of the promotion
+	var firstOK atomic.Int64
+	var noSlot atomic.Int64
+	stop := make(chan struct{})
+	timers := []*time.Timer{
+		time.AfterFunc(crashAt, func() { m.setDown(primary0, true) }),
+		time.AfterFunc(failAt, func() { m.setTopology(lsTopology(nodes, true, false)) }),
+		time.AfterFunc(promoteAt, func() {
+			m.setTopology(lsTopology(nodes, true, true))
+			promoted.Store(time.Now().UnixNano())
+		}),
+	}
+	defer func() {
+		for _, tm := range timers {
+			tm.Stop()
+		}
+	}()
+	var wg sync.WaitGroup
+	for g := 0; g < 50; g++ {
+		wg.Add(1)
+		go func(g int) {
+			defer wg.Done()
+			for i := 0; ; i++ {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				began := time.Now().UnixNano()
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				err := client.Do(ctx, client.B().Get().Key(keys[(g*7+i)%len(keys)]).Build()).Error()
+				cancel()
+				if errors.Is(err, ErrNoSlot) {
+					noSlot.Add(1)
+				}
+				if err == nil {
+					if p := promoted.Load(); p != 0 && began > p {
+						firstOK.CompareAndSwap(0, time.Now().UnixNano())
+					}
+				}
+				if err != nil {
+					time.Sleep(time.Millisecond) // an application loop that does not spin on errors
+				}
+			}
+		}(g)
+	}
+	deadline := start.Add(promoteAt + horizon)
+	for time.Now().Before(deadline) && firstOK.Load() == 0 {
+		time.Sleep(5 * time.Millisecond)
+	}
+	close(stop)
+	wg.Wait()
+	r := lsResult{recovery: -1, noSlot: noSlot.Load()}
+	if f, p := firstOK.Load(), promoted.Load(); f != 0 && p != 0 {
+		r.recovery = time.Duration(f - p)
+	}
+	times := m.refreshTimes()
+	r.shards = len(times)
+	buckets := map[int64]int{}
+	for _, ts := range times {
+		buckets[ts.UnixNano()/int64(time.Second)]++
+	}
+	for _, n := range buckets {
+		r.peak = max(r.peak, n)
+	}
+	return r
+}
+
+func TestLargeClusterSim(t *testing.T) {
+	if os.Getenv("LARGESIM") == "" {
+		t.Skip("set LARGESIM=1")
+	}
+	sizes := []int{60, 200, 1000, 1500}
+	if s := os.Getenv("LARGESIM_SIZES"); s != "" {
+		sizes = nil
+		for _, f := range splitComma(s) {
+			n, _ := strconv.Atoi(f)
+			sizes = append(sizes, n)
+		}
+	}
+	trials := 5
+	if s := os.Getenv("LARGESIM_TRIALS"); s != "" {
+		trials, _ = strconv.Atoi(s)
+	}
+	variants := []struct {
+		name string
+		opt  ClusterOption
+	}{
+		{"all -1 (as main)", ClusterOption{MinRefreshInterval: -1, MaxSlotWait: -1, MaxRefreshDelay: -1}},
+		{"defaults", ClusterOption{}},
+		{"defaults + ShardsRefreshInterval 1s", ClusterOption{ShardsRefreshInterval: time.Second}},
+		{"fixed 50ms", ClusterOption{MinRefreshInterval: 50 * time.Millisecond, MaxSlotWait: 5 * time.Second}},
+		{"fixed 250ms", ClusterOption{MinRefreshInterval: 250 * time.Millisecond, MaxSlotWait: 5 * time.Second}},
+	}
+	for _, n := range sizes {
+		// one refresh of this size, timed
+		m := newSWCluster(lsTopology(n, false, false))
+		client := newSWClient(t, m, ClusterOption{})
+		var ds []time.Duration
+		for i := 0; i < 10; i++ {
+			s := time.Now()
+			if err := client._refresh(); err != nil {
+				t.Fatal(err)
+			}
+			ds = append(ds, time.Since(s))
+		}
+		sort.Slice(ds, func(i, j int) bool { return ds[i] < ds[j] })
+		fmt.Printf("LARGESIM size=%d refresh_median=%v auto_max_delay=%v\n", n, ds[len(ds)/2].Round(time.Microsecond), clusterRefreshAutoMaxDelay(n+1))
+		client.Close()
+		for _, v := range variants {
+			var recs []float64
+			var none int
+			var noSlot int64
+			var shards, peak int
+			for i := 0; i < trials; i++ {
+				// detection 1s (the cluster flags the primary failed), election 300-800ms
+				r := lsTrial(t, n, v.opt, time.Second, 300*time.Millisecond+time.Duration(rand.Int63n(int64(500*time.Millisecond))), 35*time.Second)
+				if r.recovery < 0 {
+					none++
+				} else {
+					recs = append(recs, float64(r.recovery)/float64(time.Millisecond))
+				}
+				noSlot += r.noSlot
+				shards += r.shards
+				peak = max(peak, r.peak)
+			}
+			sort.Float64s(recs)
+			med, worst := -1.0, -1.0
+			if len(recs) > 0 {
+				med, worst = recs[len(recs)/2], recs[len(recs)-1]
+			}
+			fmt.Printf("LARGESIM size=%d variant=%q trials=%d recovery_ms_median=%.0f recovery_ms_max=%.0f recovery_all=%v no_recovery=%d err_no_slot_total=%d refreshes_per_trial=%d peak_refreshes_per_s=%d\n",
+				n, v.name, trials, med, worst, roundAll(recs), none, noSlot, shards/trials, peak)
+		}
+	}
+}
+
+func roundAll(v []float64) []int {
+	out := make([]int, len(v))
+	for i, x := range v {
+		out[i] = int(x + 0.5)
+	}
+	return out
+}
+
+func splitComma(s string) []string {
+	var out []string
+	cur := ""
+	for _, c := range s {
+		if c == ',' {
+			out = append(out, cur)
+			cur = ""
+			continue
+		}
+		cur += string(c)
+	}
+	return append(out, cur)
+}

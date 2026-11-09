@@ -1,0 +1,9 @@
+# extra confirmation runs
+smart-kill s8 3 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill s8 4 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill s8 5 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-planned f_s8 2 150 bench-ar/bin/bench-final8 -fail-kind planned -duration 20s -clients 20
+smart-elect5 s8 1 170 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 20 -fail-hold 5 -duration 30s
+smart-migrate s8 1 180 bench-ar/bin/bench-final8 -fail-kind migrate -migrate-slots 0-199 -key-slots 0-199 -after-migrate 10s -duration 60s -errorstats-poll 20ms
+smart-idle-kill s8 1 180 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 30 -fail-hold 0 -fail-at 5s -idle-from 4s -idle-until 22s -duration 30s -shards-refresh 0s
+smart-pipe-kill s8 1 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -pipeline 10

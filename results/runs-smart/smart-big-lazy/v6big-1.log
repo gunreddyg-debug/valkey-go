@@ -1,0 +1,79 @@
+bench: label=v6big run=1 build=v6big options=map[MaxSlotWait:0s MinRefreshInterval:0s ShardsRefreshInterval:1s]
+bench: 200 goroutines, 50s, 2s per request, 1000 keys in slots [[0 5460]] of primary 127.0.0.1:7101; kill at t=5s for 15s, promotion held 3s
+fail-primary.sh: [t= 5.297s] FAILED port=7101 mode=kill container=lf-valkey-7101
+fail-primary.sh: [t= 5.300s] [04:40:34] kill lf-valkey-7101 (primary of slot 0) for 15s, promotion of replica 7105 held 3s after the fail flag
+fail-primary.sh: [t=11.508s] FLAGGED_FAIL port=7101
+fail-primary.sh: [t=14.551s] PROMOTE replica=7105 reply=OK
+fail-primary.sh: [t=20.701s] RESTORED port=7101
+fail-primary.sh: [t=20.740s] [04:40:50] restored lf-valkey-7101; slot 0 is now owned by port 7105
+
+=== result label=v6big run=1 build=v6big options=map[MaxSlotWait:0s MinRefreshInterval:0s ShardsRefreshInterval:1s] mode=kill hold=3s ===
+failed primary 127.0.0.1:7101 (slots [[0 5460]]): failure at t=5.297s, restored at t=20.701s
+requests 10810593: ok 10808665, ErrNoSlot 0, context deadline 201, other 1727
+  other     1619  first at t=6.317s  dial tcp 127.0.0.1:7101: connect: connection refused
+  other      108  first at t=5.137s  read tcp 127.0.0.1:34056->127.0.0.1:7101: read: connection reset by peer
+longest success 1778.3ms (started at t=12.846s); first success after the failure +9.326s; errors from t=5.137s to +9.093s after the failure; ErrNoSlot from never to never
+CLUSTER SHARDS sent: 1 while creating the client, 21 during the run, 21 after the failure, 10 in the no-primary window, max 5/s; by address map[127.0.0.1:16379:22]
+CLUSTER SHARDS times after the failure (s): +0.089 +1.090 +2.092 +3.093 +4.095 +5.095 +6.098 +7.099 +7.300 +7.501 +7.711 +7.912 +8.115 +8.316 +8.518 +8.720 +8.922 +9.323 +14.490 +15.491 +31.961
+CLUSTER SHARDS to other addresses than the discovery endpoint 127.0.0.1:16379: 0 (0 during the run); CLUSTER GETSLOTMIGRATIONS: 0 during the run, by address map[]
+dials: 127.0.0.1:16379=1 127.0.0.1:7101=7395(7394 failed) 127.0.0.1:7105=1
+topology (CLUSTER SHARDS on every node every 100ms): old primary flagged fail +6.107s; no online primary from +6.107s to +9.267s (3161ms, 286 polls on 5 nodes); new primary 127.0.0.1:7105 +9.267s
+promotion +9.267s (watcher; PROMOTE line +9.254s, FLAGGED_FAIL line +6.212s); promotion → first success +0.058s; client traffic to the old primary until +0.000s after the promotion, its last MOVED never after it
+server errors (INFO errorstats, all nodes, before → after the run): MOVED 0, ASK 0, other map[]; restarts map[127.0.0.1:7101:1]
+latency of successes: run n=10808665 p50 0.584ms p99 3.424ms p999 12.416ms max 1802.2ms; 216171 ops/s over 50.0s
+latency of successes in the failure window t=5.3s..15.6s: n=263116 p50 0.600ms p99 4.064ms p999 13.440ms max 1802.2ms
+timeline (by request end time):
+     t        ok  ErrNoSlot   deadline      other  CLUSTER_SHARDS  MOVED(srv)  ASK(srv)
+    0s    262711          0          0          0          0           0         0
+    1s    287348          0          0          0          0           0         0
+    2s    263322          0          0          0          0           0         0
+    3s    265617          0          0          0          0           0         0
+    4s    265966          0          0          0          0           0         0
+    5s     29054          0          0        108          1           0         0
+    6s         0          0          0        376          1           0         0
+    7s         0          0          0         74          1           0         0
+    8s         0          0          1        349          1           0         0
+    9s         0          0          0        256          1           0         0
+   10s         0          0          0        182          1           0         0
+   11s         0          0          0        340          1           0         0
+   12s         0          0         11         42          3           0         0
+   13s         0          0        168          0          5           0         0
+   14s     95378          0         21          0          3           0         0
+   15s    246702          0          0          0          0           0         0
+   16s    246072          0          0          0          0           0         0
+   17s    260351          0          0          0          0           0         0
+   18s    269097          0          0          0          0           0         0
+   19s    263293          0          0          0          1           0         0
+   20s    241236          0          0          0          1           0         0
+   21s    238703          0          0          0          0           0         0
+   22s    308543          0          0          0          0           0         0
+   23s    282722          0          0          0          0           0         0
+   24s    265944          0          0          0          0           0         0
+   25s    289675          0          0          0          0           0         0
+   26s    267878          0          0          0          0           0         0
+   27s    289931          0          0          0          0           0         0
+   28s    282701          0          0          0          0           0         0
+   29s    239062          0          0          0          0           0         0
+   30s    253678          0          0          0          0           0         0
+   31s    251711          0          0          0          0           0         0
+   32s    265576          0          0          0          0           0         0
+   33s    277826          0          0          0          0           0         0
+   34s    259366          0          0          0          0           0         0
+   35s    276418          0          0          0          0           0         0
+   36s    267195          0          0          0          0           0         0
+   37s    252032          0          0          0          1           0         0
+   38s    266559          0          0          0          0           0         0
+   39s    272374          0          0          0          0           0         0
+   40s    276999          0          0          0          0           0         0
+   41s    254386          0          0          0          0           0         0
+   42s    256030          0          0          0          0           0         0
+   43s    282734          0          0          0          0           0         0
+   44s    272127          0          0          0          0           0         0
+   45s    271758          0          0          0          0           0         0
+   46s    276992          0          0          0          0           0         0
+   47s    275806          0          0          0          0           0         0
+   48s    251075          0          0          0          0           0         0
+   49s    286355          0          0          0          0           0         0
+   50s       362          0          0          0          0           0         0
+   51s         0          0          0          0          0           0         0
+   52s         0          0          0          0          0           0         0

@@ -1,0 +1,76 @@
+date:            2026-11-04T06:02:54+00:00
+host:            Linux 7.1.6-1rodete1-amd64, 24 CPUs, Docker version 29.8.0, build 88096ef
+valkey image:    valkey/valkey:9.0.6 valkey/valkey@sha256:63346cb24a61221e76bdf41acce99b3968a9fa83d8122144deab45394b27b4f2
+valkey server:   Valkey server v=9.0.6 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=1f17d480abe8beb6
+haproxy image:   haproxy@sha256:254e6370f01cd654e0744edf607c67f33777c1b6a9dc0d4b28bcba7171460122
+go:              go version go1.26.8 linux/amd64
+
+# valkey-go trees of the PR #208/#209 x PR #20 matrix (2026-10-21T16:43:35Z)
+main      273c8faf71a0db145cd7b23ee6d86c485bdfa2aa (2026-10-21) Xnack command (#199)
+pr208     38768fc7e561309ff774dcf25f523420bd10925f (2026-10-21, parent 273c8fa) fix(cluster): preempt delayed singleflight refresh on retry attempts
+pr209     0bda18f43f83a21afe5d7416ae7a15dc2ce133c6 (2026-10-20, parent f00eae4) feat(cluster): add atomic slot migration awareness
+core      3778620cb42c3cf760e08d0814f74f4ea3357d07 (2026-10-21, parent 19ef27e) feat(cluster): add MinRefreshInterval and MaxSlotWait
+core patch-id 5fd36677169ee6a6804cf67a11269b03d3380662
+remote now: main=273c8faf71a0db145cd7b23ee6d86c485bdfa2aa pull/208/head=38768fc7e561309ff774dcf25f523420bd10925f pull/209/head=0bda18f43f83a21afe5d7416ae7a15dc2ce133c6
+
+u: = main
+u208: 273c8fa + pull/208/head 38768fc -> 38768fc (fast-forward)
+u209: 273c8fa + pull/209/head 0bda18f -> 4573dfc (merge commit, no conflicts)
+u208209: 273c8fa + pull/208/head 38768fc -> 38768fc (fast-forward)
+u208209: 38768fc + pull/209/head 0bda18f -> be9f405 (merge commit, no conflicts)
+p: 273c8fa + cherry-pick 3778620 -> e39ae71 (clean)
+p208: 273c8fa + cherry-pick 3778620 -> e39ae71 (clean)
+p208: e39ae71 + pull/208/head 38768fc -> c02829e (merge commit, no conflicts)
+p209: 273c8fa + cherry-pick 3778620 -> e39ae71 (clean)
+p209: e39ae71 + pull/209/head 0bda18f -> 5990a14 (merge commit, no conflicts)
+p208209: 273c8fa + cherry-pick 3778620 -> e39ae71 (clean)
+p208209: e39ae71 + pull/208/head 38768fc -> 8d1283e (merge commit, no conflicts)
+p208209: 8d1283e + pull/209/head 0bda18f -> be9d2b6 (merge commit, no conflicts)
+
+u        273c8faf71a0db145cd7b23ee6d86c485bdfa2aa  files vs main: 
+u208     38768fc7e561309ff774dcf25f523420bd10925f  files vs main: cluster.go cluster_test.go singleflight.go singleflight_test.go 
+u209     4573dfcd34f5ea49502f0b10dd41b06be45efbb5  files vs main: cluster.go cluster_migration.go cluster_migration_e2e_test.go cluster_migration_test.go docker-compose.yml internal/cmds/cmds.go valkey.go 
+u208209  be9f405ce9ea1cbd78918ba34682eeffbdfa5730  files vs main: cluster.go cluster_migration.go cluster_migration_e2e_test.go cluster_migration_test.go cluster_test.go docker-compose.yml internal/cmds/cmds.go singleflight.go singleflight_test.go valkey.go 
+p        e39ae711ba712142a923c2c4abf7f497e74c3759  files vs main: cluster.go cluster_slotwait_test.go valkey.go 
+p208     c02829e2f560f853785c2bb49048099847cb32ab  files vs main: cluster.go cluster_slotwait_test.go cluster_test.go singleflight.go singleflight_test.go valkey.go 
+p209     5990a14344f93832c869f05d50b96139f309c129  files vs main: cluster.go cluster_migration.go cluster_migration_e2e_test.go cluster_migration_test.go cluster_slotwait_test.go docker-compose.yml internal/cmds/cmds.go valkey.go 
+p208209  be9d2b6c6f933fbd5c5dc8f9cc36aeafdd65d214  files vs main: cluster.go cluster_migration.go cluster_migration_e2e_test.go cluster_migration_test.go cluster_slotwait_test.go cluster_test.go docker-compose.yml internal/cmds/cmds.go singleflight.go singleflight_test.go valkey.go 
+
+bench/bin/bench-p: ../src/p -ldflags="-X -tags=pr1 
+bench/bin/bench-p208: ../src/p208 -ldflags="-X -tags=pr1 
+bench/bin/bench-p208209: ../src/p208209 -ldflags="-X -tags=pr1,asm 
+bench/bin/bench-p209: ../src/p209 -ldflags="-X -tags=pr1,asm 
+bench/bin/bench-pr1: ../src/pr1 -tags=pr1 
+bench/bin/bench-u: ../src/u -ldflags="-X 
+bench/bin/bench-u208: ../src/u208 -ldflags="-X 
+bench/bin/bench-u208209: ../src/u208209 -ldflags="-X -tags=asm 
+bench/bin/bench-u209: ../src/u209 -ldflags="-X -tags=asm 
+bench/bin/bench-upstream: ../src/upstream 
+
+queue at start (runs-holistic/queue.txt):
+# Holistic defaults: MaxRefreshDelay samples on the final code (final7 = 1f2afc9; final7big = same + 1000-node emulation)
+smart-planned s7 1 150 bench-ar/bin/bench-final7 -fail-kind planned -duration 20s
+smart-planned s7d50 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 50ms -fail-kind planned -duration 20s
+smart-planned s7d250 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 250ms -fail-kind planned -duration 20s
+smart-pause s7 1 150 bench-ar/bin/bench-final7 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause s7d50 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 50ms -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause s7d250 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 250ms -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-big-pause b7 1 200 bench-ar/bin/bench-final7big -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-pause b7d1s 1 200 bench-ar/bin/bench-final7big -max-refresh-delay 1s -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-steady b7 1 120 bench-ar/bin/bench-final7big -shards-refresh 1s -no-fail -duration 20s
+smart-big-steady lmain 1 120 bench-ar/bin/bench-m2vd -max-refresh-delay 30s -shards-refresh 1s -no-fail -duration 20s
+smart-planned f_s7 1 150 bench-ar/bin/bench-final7 -fail-kind planned -duration 20s -clients 20
+smart-planned f_s7d50 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 50ms -fail-kind planned -duration 20s -clients 20
+smart-planned f_s7d250 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 250ms -fail-kind planned -duration 20s -clients 20
+smart-kill s7 1 150 bench-ar/bin/bench-final7 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill s7d50 1 150 bench-ar/bin/bench-final7 -max-refresh-delay 50ms -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-planned s7 2 150 bench-ar/bin/bench-final7 -fail-kind planned -duration 20s
+smart-planned s7d50 2 150 bench-ar/bin/bench-final7 -max-refresh-delay 50ms -fail-kind planned -duration 20s
+smart-planned s7d250 2 150 bench-ar/bin/bench-final7 -max-refresh-delay 250ms -fail-kind planned -duration 20s
+smart-pause s7 2 150 bench-ar/bin/bench-final7 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause s7d250 2 150 bench-ar/bin/bench-final7 -max-refresh-delay 250ms -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-big-pause b7 2 200 bench-ar/bin/bench-final7big -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-pause b7d1s 2 200 bench-ar/bin/bench-final7big -max-refresh-delay 1s -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-pause b7d250 1 200 bench-ar/bin/bench-final7big -max-refresh-delay 250ms -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-kill b7 1 200 bench-ar/bin/bench-final7big -fail-mode kill -fail-seconds 30 -fail-hold 0 -duration 50s
+steady s7 1 120 bench-ar/bin/bench-final7 -no-fail -duration 20s

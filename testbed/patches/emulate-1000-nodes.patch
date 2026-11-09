@@ -1,0 +1,14 @@
+diff --git a/cluster.go b/cluster.go
+index 43d5525..95ee682 100644
+--- a/cluster.go
++++ b/cluster.go
+@@ -327,7 +327,8 @@ func (c *clusterClient) nodeCount() int {
+ 	c.mu.RLock()
+ 	n := len(c.conns)
+ 	c.mu.RUnlock()
+-	return n
++	_ = n
++	return 1000 // test bed only: emulate a cluster of 1000 nodes (30s lazy delay, 1s interval, 200ms promotion gap)
+ }
+ 
+ // sinceRefreshLeft returns the time until d has passed since the last refresh finished, or 0.

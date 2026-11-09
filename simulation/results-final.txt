@@ -1,0 +1,22 @@
+# Large-cluster simulation on the final code of PR #209 (product code of e69412f), 4 November 2026
+# LARGESIM=1 LARGESIM_SIZES=60,200,1000 LARGESIM_TRIALS=3 GOMAXPROCS=4 go test -run TestLargeClusterSim -v .
+# Mocked cluster (swCluster), N/2 shards; per trial: crash at 0.2-0.7s, failure flag 1s later, promotion 300-800ms after that; 50 goroutines, 2s deadlines.
+# recovery = promotion to first successful read; refresh_median = client-side time of one refresh of that size.
+LARGESIM size=60 refresh_median=183µs auto_max_delay=1s
+LARGESIM size=60 variant="all -1 (as main)" trials=3 recovery_ms_median=4 recovery_ms_max=22 recovery_all=[0 4 22] no_recovery=0 err_no_slot_total=4058 refreshes_per_trial=100 peak_refreshes_per_s=288
+LARGESIM size=60 variant="defaults" trials=3 recovery_ms_median=15 recovery_ms_max=16 recovery_all=[7 15 16] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=11 peak_refreshes_per_s=8
+LARGESIM size=60 variant="defaults + ShardsRefreshInterval 1s" trials=3 recovery_ms_median=35 recovery_ms_max=36 recovery_all=[14 35 36] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=11 peak_refreshes_per_s=8
+LARGESIM size=60 variant="fixed 50ms" trials=3 recovery_ms_median=29 recovery_ms_max=43 recovery_all=[6 29 43] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=26 peak_refreshes_per_s=15
+LARGESIM size=60 variant="fixed 250ms" trials=3 recovery_ms_median=184 recovery_ms_max=242 recovery_all=[15 184 242] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=9 peak_refreshes_per_s=4
+LARGESIM size=200 refresh_median=589µs auto_max_delay=4.254444444s
+LARGESIM size=200 variant="all -1 (as main)" trials=3 recovery_ms_median=1394 recovery_ms_max=2673 recovery_all=[1333 1394 2673] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=2 peak_refreshes_per_s=1
+LARGESIM size=200 variant="defaults" trials=3 recovery_ms_median=13 recovery_ms_max=47 recovery_all=[11 13 47] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=13 peak_refreshes_per_s=10
+LARGESIM size=200 variant="defaults + ShardsRefreshInterval 1s" trials=3 recovery_ms_median=23 recovery_ms_max=46 recovery_all=[3 23 46] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=13 peak_refreshes_per_s=10
+LARGESIM size=200 variant="fixed 50ms" trials=3 recovery_ms_median=29 recovery_ms_max=32 recovery_all=[17 29 32] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=26 peak_refreshes_per_s=18
+LARGESIM size=200 variant="fixed 250ms" trials=3 recovery_ms_median=22 recovery_ms_max=119 recovery_all=[10 22 119] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=7 peak_refreshes_per_s=4
+LARGESIM size=1000 refresh_median=2.004ms auto_max_delay=30s
+LARGESIM size=1000 variant="all -1 (as main)" trials=3 recovery_ms_median=5324 recovery_ms_max=15540 recovery_all=[5 5324 15540] no_recovery=0 err_no_slot_total=1613 refreshes_per_trial=26 peak_refreshes_per_s=74
+LARGESIM size=1000 variant="defaults" trials=3 recovery_ms_median=164 recovery_ms_max=349 recovery_all=[31 164 349] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=3 peak_refreshes_per_s=2
+LARGESIM size=1000 variant="defaults + ShardsRefreshInterval 1s" trials=3 recovery_ms_median=139 recovery_ms_max=341 recovery_all=[113 139 341] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=3 peak_refreshes_per_s=2
+LARGESIM size=1000 variant="fixed 50ms" trials=3 recovery_ms_median=34 recovery_ms_max=34 recovery_all=[6 34 34] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=24 peak_refreshes_per_s=14
+LARGESIM size=1000 variant="fixed 250ms" trials=3 recovery_ms_median=132 recovery_ms_max=147 recovery_all=[37 132 147] no_recovery=0 err_no_slot_total=0 refreshes_per_trial=8 peak_refreshes_per_s=4

@@ -1,0 +1,2710 @@
+From 7add3da22e1bd7ff9d8adf118cdfa03eef62dacb Mon Sep 17 00:00:00 2001
+From: Anurag Reddy Gunreddy <gunreddyg@google.com>
+Date: Tue, 3 Nov 2026 07:20:20 +0000
+Subject: [PATCH 1/7] feat(cluster): learn the new owner of a slot from MOVED
+
+When a command is redirected with MOVED to a node that the client already
+has a connection to, redirectOrNew now routes the slot to that node until
+the next topology refresh, as it already does when it has to create the
+connection. Commands that race a failover or a slot migration then cost
+one redirect per slot instead of one per command until the refresh.
+
+With SendToReplicas, the slot's reads follow it too: the replicas of the
+previous owner no longer serve the slot, and those of the new owner are
+only known after the refresh. With ReplicaOnly, where the slot map holds
+replicas, the regular refresh applies. ASK never changes routing.
+
+On 3-primary Valkey 9.0.6 and 9.1.2 clusters with 32 workers, the MOVED
+replies per atomic slot migration drop from 449-27,824 to 32 for a
+migration of 1 slot and to 419-978 for one of 200 slots.
+
+Signed-off-by: Anurag Reddy Gunreddy <gunreddyg@google.com>
+Co-authored-by: Omkar Mestry <omanges@google.com>
+---
+ cluster.go      |  34 +++++++-
+ cluster_test.go | 206 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 238 insertions(+), 2 deletions(-)
+
+diff --git a/cluster.go b/cluster.go
+index b2c96c0..aba04fc 100644
+--- a/cluster.go
++++ b/cluster.go
+@@ -614,8 +614,21 @@ func (c *clusterClient) pick(ctx context.Context, slot uint16, toReplica bool) (
+ func (c *clusterClient) redirectOrNew(addr string, prev conn, slot uint16, mode RedirectMode) conn {
+ 	c.mu.RLock()
+ 	cc := c.conns[addr]
++	// With ReplicaOnly the slot map points to replicas, not to the primary named by MOVED, so it is left to the
++	// regular refresh.
++	stale := !c.replicaOnly() && mode == RedirectMove && slot != cmds.InitSlot && cc.conn != nil && c.wslots[slot] != cc.conn
+ 	c.mu.RUnlock()
+ 	if cc.conn != nil && prev != cc.conn {
++		if stale {
++			// MOVED is authoritative for the slot. Remember the new owner, as the branches below do,
++			// so the following commands for the slot go there directly instead of being redirected
++			// again until the next topology refresh.
++			c.mu.Lock()
++			if c.conns[addr].conn == cc.conn {
++				c.routeMoved(slot, addr, cc.conn)
++			}
++			c.mu.Unlock()
++		}
+ 		return cc.conn
+ 	}
+ 	c.mu.Lock()
+@@ -624,7 +637,7 @@ func (c *clusterClient) redirectOrNew(addr string, prev conn, slot uint16, mode
+ 		cc = connrole{conn: p}
+ 		c.conns[addr] = cc
+ 		if mode == RedirectMove && slot != cmds.InitSlot {
+-			c.wslots[slot] = p
++			c.routeMoved(slot, addr, p)
+ 		}
+ 	} else if prev == cc.conn {
+ 		// try reconnection if the MOVED redirects to the same host,
+@@ -638,13 +651,30 @@ func (c *clusterClient) redirectOrNew(addr string, prev conn, slot uint16, mode
+ 		cc = connrole{conn: p}
+ 		c.conns[addr] = cc
+ 		if mode == RedirectMove && slot != cmds.InitSlot { // MOVED should always point to the primary.
+-			c.wslots[slot] = p
++			c.routeMoved(slot, addr, p)
+ 		}
+ 	}
+ 	c.mu.Unlock()
+ 	return cc.conn
+ }
+ 
++// routeMoved routes slot to cc, the primary at addr named by a MOVED reply, until the next topology refresh. When
++// reads are sent to replicas, they follow it too: the replicas of the slot's previous owner no longer serve the slot,
++// and those of the new owner are only known after the refresh. c.mu must be held.
++func (c *clusterClient) routeMoved(slot uint16, addr string, cc conn) {
++	c.wslots[slot] = cc
++	if c.rslots != nil && c.opt.SendToReplicas != nil {
++		c.rslots[slot] = nodes{{Addr: addr, conn: cc}}
++	}
++}
++
++// replicaOnly reports whether the client was configured with ReplicaOnly, so that its slot map points to replicas.
++// A client with SendToReplicas also has ReplicaOnly set in c.opt, to dial every connection with READONLY, but its slot
++// map points to primaries.
++func (c *clusterClient) replicaOnly() bool {
++	return c.opt.ReplicaOnly && c.opt.SendToReplicas == nil
++}
++
+ func (c *clusterClient) B() Builder {
+ 	return c.cmd
+ }
+diff --git a/cluster_test.go b/cluster_test.go
+index 8f51bb5..97514ef 100644
+--- a/cluster_test.go
++++ b/cluster_test.go
+@@ -6,6 +6,7 @@ import (
+ 	"errors"
+ 	"fmt"
+ 	"io"
++	"net"
+ 	"reflect"
+ 	"sort"
+ 	"strconv"
+@@ -12582,3 +12583,208 @@ func TestClusterClientSendToReplicasConnsSurviveFailover(t *testing.T) {
+ 		t.Fatal("a conn dialed by redirectOrNew should be dialed with READONLY")
+ 	}
+ }
++
++// Tests for learning the new owner of a slot from MOVED replies.
++
++// newMovedTestClient returns a client of the topology slotsMultiResp: slots 0-8192 on 127.0.0.1:0 with the replica
++// 127.0.1.1:1, and slots 8193-16383 on 127.0.2.1:0 with the replica 127.0.3.1:1. nodes gives the connection of each
++// address; other addresses get one shared connection. With sendToReplicas, read-only commands go to replicas.
++func newMovedTestClient(t *testing.T, nodes map[string]*mockConn, sendToReplicas bool) *clusterClient {
++	t.Helper()
++	release := make(chan struct{})
++	var refreshed int32
++	topology := func(cmd Completed) ValkeyResult {
++		// the first refresh builds the slot map; later (lazy) refreshes are held until the test
++		// is done so they cannot overwrite the slot map while the test inspects it.
++		if atomic.AddInt32(&refreshed, 1) > 1 {
++			<-release
++		}
++		return slotsMultiResp
++	}
++	other := &mockConn{DoOverride: map[string]func(cmd Completed) ValkeyResult{"CLUSTER SLOTS": topology}}
++	for _, n := range nodes {
++		n.DoOverride = other.DoOverride
++	}
++	opt := &ClientOption{InitAddress: []string{"127.0.0.1:0"}}
++	if sendToReplicas {
++		opt.SendToReplicas = func(cmd Completed) bool { return cmd.IsReadOnly() }
++	}
++	client, err := newClusterClient(
++		opt,
++		func(dst string, opt *ClientOption) conn {
++			if n, ok := nodes[dst]; ok {
++				return n
++			}
++			return other
++		},
++		newRetryer(defaultRetryDelayFn),
++	)
++	if err != nil {
++		t.Fatalf("unexpected err %v", err)
++	}
++	t.Cleanup(func() {
++		close(release)
++		client.Close()
++	})
++	return client
++}
++
++// TestClusterClientRedirectToExistingConn checks slot learning when the connection to the node a redirect names
++// already exists: MOVED routes the slot there, except with ReplicaOnly, and ASK never changes the route. It also
++// checks the other two ways MOVED is followed: to a new connection, and to a reconnection to the same address.
++func TestClusterClientRedirectToExistingConn(t *testing.T) {
++	t.Run("MOVED", func(t *testing.T) {
++		var ownerCalls, targetCalls int32
++		owner := &mockConn{DoFn: func(cmd Completed) ValkeyResult {
++			atomic.AddInt32(&ownerCalls, 1)
++			return NewResult(strmsg('-', "MOVED 5061 127.0.2.1:0"), nil)
++		}}
++		target := &mockConn{DoFn: func(cmd Completed) ValkeyResult {
++			atomic.AddInt32(&targetCalls, 1)
++			return NewResult(strmsg('+', "OK"), nil)
++		}}
++		client := newMovedTestClient(t, map[string]*mockConn{"127.0.0.1:0": owner, "127.0.2.1:0": target}, false)
++
++		get := client.B().Get().Key("bar").Build()
++		if get.Slot() != 5061 {
++			t.Fatalf("test key must hash to slot 5061, got %d", get.Slot())
++		}
++		if client._pick(5061, false) != owner {
++			t.Fatal("slot 5061 should start on 127.0.0.1:0")
++		}
++
++		// the first command is redirected; the conn to the new owner already exists
++		if v, err := client.Do(context.Background(), get).ToString(); err != nil || v != "OK" {
++			t.Fatalf("unexpected %v %v", v, err)
++		}
++		if client._pick(5061, false) != target {
++			t.Fatal("MOVED to an existing conn should update the slot owner")
++		}
++		if client._pick(5062, false) != owner {
++			t.Fatal("other slots must keep their owner")
++		}
++
++		// the following commands go to the new owner directly
++		for i := 0; i < 10; i++ {
++			if v, err := client.Do(context.Background(), client.B().Get().Key("bar").Build()).ToString(); err != nil || v != "OK" {
++				t.Fatalf("unexpected %v %v", v, err)
++			}
++		}
++		if n := atomic.LoadInt32(&ownerCalls); n != 1 {
++			t.Fatalf("old owner should be asked once, got %d", n)
++		}
++		if n := atomic.LoadInt32(&targetCalls); n != 11 {
++			t.Fatalf("new owner should serve all 11 commands, got %d", n)
++		}
++
++		// with ReplicaOnly the slot map points to replicas, so MOVED, which names the primary, must not replace them
++		client.opt.ReplicaOnly = true
++		client.mu.Lock()
++		client.wslots[5061] = owner
++		client.mu.Unlock()
++		if v, err := client.Do(context.Background(), client.B().Get().Key("bar").Build()).ToString(); err != nil || v != "OK" {
++			t.Fatalf("unexpected %v %v", v, err)
++		}
++		if client._pick(5061, false) != owner {
++			t.Fatal("with ReplicaOnly, MOVED must not replace the replica route of the slot")
++		}
++	})
++
++	t.Run("ASK", func(t *testing.T) {
++		owner := &mockConn{DoFn: func(cmd Completed) ValkeyResult {
++			return NewResult(strmsg('-', "ASK 5061 127.0.2.1:0"), nil)
++		}}
++		target := &mockConn{DoMultiFn: func(multi ...Completed) *valkeyresults {
++			return &valkeyresults{s: []ValkeyResult{NewResult(strmsg('+', "OK"), nil), NewResult(strmsg('+', "OK"), nil)}}
++		}}
++		client := newMovedTestClient(t, map[string]*mockConn{"127.0.0.1:0": owner, "127.0.2.1:0": target}, false)
++
++		if v, err := client.Do(context.Background(), client.B().Get().Key("bar").Build()).ToString(); err != nil || v != "OK" {
++			t.Fatalf("unexpected %v %v", v, err)
++		}
++		if client._pick(5061, false) != owner {
++			t.Fatal("ASK is temporary and must not change the slot owner")
++		}
++	})
++
++	// A MOVED that names the address of the node that answered it makes the client reconnect to that address, as a
++	// failover behind the same hostname can require; the slot is routed to the new connection.
++	t.Run("MOVED to the same address", func(t *testing.T) {
++		var redirected atomic.Bool
++		owner := &mockConn{DoFn: func(cmd Completed) ValkeyResult {
++			if redirected.CompareAndSwap(false, true) {
++				return NewResult(strmsg('-', "MOVED 5061 127.0.0.1:0"), nil)
++			}
++			return NewResult(strmsg('+', "OK"), nil)
++		}}
++		nodes := map[string]*mockConn{"127.0.0.1:0": owner}
++		client := newMovedTestClient(t, nodes, false)
++		fresh := &mockConn{DoOverride: owner.DoOverride, DoFn: func(cmd Completed) ValkeyResult {
++			return NewResult(strmsg('+', "OK"), nil)
++		}}
++		client.mu.Lock()
++		nodes["127.0.0.1:0"] = fresh // the next connection made to the address
++		client.mu.Unlock()
++		if v, err := client.Do(context.Background(), client.B().Get().Key("bar").Build()).ToString(); err != nil || v != "OK" {
++			t.Fatalf("unexpected %v %v", v, err)
++		}
++		if client._pick(5061, false) != fresh {
++			t.Fatal("the slot should route to the new connection to the address")
++		}
++	})
++
++	// With SendToReplicas, reads go to the replica of the slot's shard, which redirects them after the handover.
++	// MOVED routes both the writes and the reads of the slot to the new owner until the next refresh, whether the
++	// connection to it exists already or is created by the redirect.
++	t.Run("MOVED with SendToReplicas", func(t *testing.T) {
++		var movedTo atomic.Value
++		movedTo.Store("127.0.2.1:0")
++		var replicaCalls, targetCalls, freshCalls int32
++		replica := &mockConn{DoFn: func(cmd Completed) ValkeyResult {
++			atomic.AddInt32(&replicaCalls, 1)
++			return NewResult(strmsg('-', "MOVED 5061 "+movedTo.Load().(string)), nil)
++		}}
++		serve := func(calls *int32) *mockConn {
++			return &mockConn{DoFn: func(cmd Completed) ValkeyResult {
++				atomic.AddInt32(calls, 1)
++				return NewResult(strmsg('+', "OK"), nil)
++			}}
++		}
++		owner, target, fresh := &mockConn{}, serve(&targetCalls), serve(&freshCalls)
++		client := newMovedTestClient(t, map[string]*mockConn{
++			"127.0.0.1:0": owner, "127.0.1.1:1": replica, "127.0.2.1:0": target, "127.0.4.1:0": fresh,
++		}, true)
++		if client._pick(5061, true) != replica || client._pick(5061, false) != owner {
++			t.Fatal("slot 5061 should start with its reads on 127.0.1.1:1 and its writes on 127.0.0.1:0")
++		}
++		read := func() {
++			t.Helper()
++			for i := 0; i < 3; i++ {
++				if v, err := client.Do(context.Background(), client.B().Get().Key("bar").Build()).ToString(); err != nil || v != "OK" {
++					t.Fatalf("unexpected %v %v", v, err)
++				}
++			}
++		}
++
++		read() // the connection to the new owner exists
++		if client._pick(5061, false) != target || client._pick(5061, true) != target {
++			t.Fatal("MOVED should route the writes and the reads of the slot to the new owner")
++		}
++		if r, n := atomic.LoadInt32(&replicaCalls), atomic.LoadInt32(&targetCalls); r != 1 || n != 3 {
++			t.Fatalf("the replica should redirect one read and the new owner serve all three, got %d and %d", r, n)
++		}
++
++		// a later handover to a primary the client is not connected to yet
++		client.mu.Lock()
++		client.wslots[5061], client.rslots[5061] = owner, nodes{{Addr: "127.0.1.1:1", conn: replica}}
++		client.mu.Unlock()
++		movedTo.Store("127.0.4.1:0")
++		read()
++		if client._pick(5061, false) != fresh || client._pick(5061, true) != fresh {
++			t.Fatal("MOVED to a new connection should route the writes and the reads of the slot to it")
++		}
++		if r, n := atomic.LoadInt32(&replicaCalls), atomic.LoadInt32(&freshCalls); r != 2 || n != 3 {
++			t.Fatalf("the replica should redirect one more read and the new owner serve all three, got %d and %d", r, n)
++		}
++	})
++}
+-- 
+2.56.0.385.gac671c819a-goog
+
+
+From 2a73d622a96d0795aa01c8958006275c96686290 Mon Sep 17 00:00:00 2001
+From: Anurag Reddy Gunreddy <gunreddyg@google.com>
+Date: Tue, 3 Nov 2026 07:25:31 +0000
+Subject: [PATCH 2/7] feat(cluster): add MinRefreshInterval and MaxSlotWait
+
+Add two ClusterOption fields that bound the topology refreshes of a
+cluster client and let requests wait for a shard to get a primary back.
+Both are off by default. With the zero values the client behaves as
+before: a request for a slot without a node refreshes once and fails
+with ErrNoSlot.
+
+MinRefreshInterval rate-limits topology refreshes. When the last refresh
+finished less than MinRefreshInterval ago, a request that finds no node
+for its slot re-reads the current slot map instead of refreshing again,
+and a lazy refresh (MOVED, connection errors, ShardsRefreshInterval)
+waits until the interval has passed. The lazy refresh checks this when
+its random delay is over rather than when it is scheduled, so it also
+waits for a refresh that finished in between.
+
+MaxSlotWait bounds how long a request waits for its slot to have a node,
+for example while a shard has no online primary during a failover. A
+waiting request re-reads the slot map each time a refresh finishes, and
+starts a refresh in the background when none is in flight, at most once
+per MinRefreshInterval or 10ms, whichever is longer. The waiting
+requests share these refreshes and do not poll: call.next returns the
+refresh in flight, or the one that starts next, and they wait for it to
+finish. The request is sent as soon as its slot has a node. It fails
+with ctx.Err() when its context ends, with ErrClosing as soon as the
+client is closed, and after MaxSlotWait with the error of the last
+refresh it waited for, or ErrNoSlot. NewClient rejects negative values
+(ErrInvalidMinRefreshInterval, ErrInvalidMaxSlotWait).
+
+Signed-off-by: Anurag Reddy Gunreddy <gunreddyg@google.com>
+---
+ README.md            |  14 +
+ cluster.go           | 169 ++++++++++-
+ cluster_test.go      | 694 +++++++++++++++++++++++++++++++++++++++++++
+ singleflight.go      |  34 ++-
+ singleflight_test.go |  47 +++
+ valkey.go            |  20 ++
+ 6 files changed, 960 insertions(+), 18 deletions(-)
+
+diff --git a/README.md b/README.md
+index d3f76e6..b500d64 100644
+--- a/README.md
++++ b/README.md
+@@ -516,6 +516,20 @@ Note that scaling the number of replicas on an existing shard (e.g. via ElastiCa
+ neither moves slots nor closes existing connections, so without `ShardsRefreshInterval`
+ the client never discovers the new replicas and continues reading the old shard.
+ 
++While a shard has no primary, during a failover for example, a request for one of its slots refreshes the
++topology and fails with `ErrNoSlot` at once, so a busy client can refresh the topology hundreds of times a
++second until the new primary appears. To bound the refreshes and let requests wait for the new primary instead:
++
++```golang
++client, err := valkey.NewClient(valkey.ClientOption{
++    InitAddress: []string{"127.0.0.1:7001", "127.0.0.1:7002", "127.0.0.1:7003"},
++    ClusterOption: valkey.ClusterOption{
++        MinRefreshInterval: 250 * time.Millisecond, // refresh the topology at most once every 250ms
++        MaxSlotWait:        5 * time.Second,        // wait up to 5s for a slot without a node instead of failing with ErrNoSlot
++    },
++})
++```
++
+ ```golang
+ // Connect to sentinels
+ client, err := valkey.NewClient(valkey.ClientOption{
+diff --git a/cluster.go b/cluster.go
+index aba04fc..e75fda1 100644
+--- a/cluster.go
++++ b/cluster.go
+@@ -23,6 +23,8 @@ var ErrReplicaOnlyConflictWithReplicaSelector = errors.New("ReplicaOnly conflict
+ var ErrReplicaOnlyConflictWithReadNodeSelector = errors.New("ReplicaOnly conflicts with ReadNodeSelector option")
+ var ErrReplicaSelectorConflictWithReadNodeSelector = errors.New("either set ReplicaSelector or ReadNodeSelector, not both")
+ var ErrSendToReplicasNotSet = errors.New("SendToReplicas must be set when ReplicaSelector is set")
++var ErrInvalidMinRefreshInterval = errors.New("MinRefreshInterval must be greater than or equal to 0")
++var ErrInvalidMaxSlotWait = errors.New("MaxSlotWait must be greater than or equal to 0")
+ 
+ type clusterClient struct {
+ 	wslots       [16384]conn
+@@ -78,6 +80,12 @@ func newClusterClient(opt *ClientOption, connFn connFn, retryer retryHandler) (*
+ 	if opt.ReplicaSelector != nil && opt.SendToReplicas == nil {
+ 		return nil, ErrSendToReplicasNotSet
+ 	}
++	if opt.ClusterOption.MinRefreshInterval < 0 {
++		return nil, ErrInvalidMinRefreshInterval
++	}
++	if opt.ClusterOption.MaxSlotWait < 0 {
++		return nil, ErrInvalidMaxSlotWait
++	}
+ 	if opt.SendToReplicas != nil && opt.ReplicaSelector == nil && opt.ReadNodeSelector == nil {
+ 		opt.ReplicaSelector = replicaOnlySelector
+ 	}
+@@ -151,12 +159,145 @@ func (c *clusterClient) init() error {
+ 	return es[0]
+ }
+ 
++// refresh refreshes the slot map, or waits for the refresh in flight.
++// With ClusterOption.MinRefreshInterval, it returns nil without refreshing when the last refresh
++// finished less than MinRefreshInterval ago, and callers re-read the current slot map. It does not
++// join a refresh in flight then either, since one started by lazyRefresh may still be in its delay.
+ func (c *clusterClient) refresh(ctx context.Context) (err error) {
+-	return c.sc.Do(ctx, c._refresh)
++	if c.opt.ClusterOption.MinRefreshInterval <= 0 {
++		return c.sc.Do(ctx, c._refresh)
++	}
++	if c.refreshIntervalLeft() > 0 {
++		return nil
++	}
++	return c.sc.Do(ctx, c._refreshIfDue)
++}
++
++// _refreshIfDue is the refresh started by refresh with MinRefreshInterval. It skips the refresh if
++// another one finished after refresh checked the interval and before this one started.
++func (c *clusterClient) _refreshIfDue() error {
++	if c.refreshIntervalLeft() > 0 {
++		return nil
++	}
++	return c._refresh()
+ }
+ 
+ func (c *clusterClient) lazyRefresh() {
+-	c.sc.DelayDo(c.clusterRefreshStartDelay(), c._refresh)
++	c.sc.DelayDo(c.clusterRefreshStartDelay(), c._lazyRefresh)
++}
++
++// _lazyRefresh is the refresh that lazyRefresh starts after its random delay. With MinRefreshInterval, it
++// first waits until the interval has passed since the last refresh finished. It checks this here, and not
++// when lazyRefresh is called, because a refresh in flight then may finish before this one is scheduled.
++func (c *clusterClient) _lazyRefresh() error {
++	if left := c.refreshIntervalLeft(); left > 0 {
++		timer := time.NewTimer(left)
++		select {
++		case <-timer.C:
++		case <-c.stopCh:
++			timer.Stop()
++			return ErrClosing
++		}
++	}
++	return c._refresh()
++}
++
++// refreshIntervalLeft returns how long ClusterOption.MinRefreshInterval still defers the next refresh:
++// the time until MinRefreshInterval has passed since the last refresh finished, or 0.
++func (c *clusterClient) refreshIntervalLeft() time.Duration {
++	return c.sinceRefreshLeft(c.opt.ClusterOption.MinRefreshInterval)
++}
++
++// sinceRefreshLeft returns the time until d has passed since the last refresh finished, or 0.
++func (c *clusterClient) sinceRefreshLeft(d time.Duration) time.Duration {
++	if d <= 0 {
++		return 0
++	}
++	c.sc.mu.Lock()
++	last := c.sc.ts
++	c.sc.mu.Unlock()
++	if last.IsZero() {
++		return 0
++	}
++	return max(0, d-time.Since(last))
++}
++
++// slotWaitMinGap is the shortest time between two refreshes started by requests that wait for their slot
++// (ClusterOption.MaxSlotWait), for when ClusterOption.MinRefreshInterval is shorter or zero.
++const slotWaitMinGap = 10 * time.Millisecond
++
++// waitSlots is called by pick, pickMulti and pickMultiCache when the slot map has no node for a slot they
++// need. found re-reads the slot map and reports whether it has the nodes now.
++// By default, waitSlots refreshes the slot map once and fails with the refresh error, or with ErrNoSlot if
++// found still reports false. With ClusterOption.MaxSlotWait, it calls found again each time a refresh
++// finishes, until it reports true, and starts a refresh in the background whenever none is in flight, at
++// most once per MinRefreshInterval or slotWaitMinGap, whichever is longer. The waiting requests share these
++// refreshes and wake up when one finishes, instead of polling the slot map. waitSlots fails with ctx.Err()
++// when ctx is done, with ErrClosing when the client is closed, and after MaxSlotWait with the error of the
++// last refresh it waited for, or ErrNoSlot.
++func (c *clusterClient) waitSlots(ctx context.Context, found func() bool) error {
++	maxWait := c.opt.ClusterOption.MaxSlotWait
++	if maxWait <= 0 {
++		if err := c.refresh(ctx); err != nil {
++			return err
++		}
++		if !found() {
++			return ErrNoSlot
++		}
++		return nil
++	}
++
++	gap := max(c.opt.ClusterOption.MinRefreshInterval, slotWaitMinGap)
++	expiry := time.NewTimer(maxWait)
++	defer expiry.Stop()
++	var pace *time.Timer
++	defer func() {
++		if pace != nil {
++			pace.Stop()
++		}
++	}()
++	var lastErr error
++	for {
++		// Take the flight before re-reading the slot map: if a refresh finishes in between, found sees
++		// its slot map, and if one finishes later, fl is that refresh or an earlier one still in flight.
++		fl := c.sc.next()
++		if found() {
++			return nil
++		}
++		var paced <-chan time.Time
++		if left := c.sinceRefreshLeft(gap); left > 0 {
++			if pace == nil {
++				pace = time.NewTimer(left)
++			} else {
++				pace.Reset(left)
++			}
++			paced = pace.C
++		} else {
++			// Start the refresh in its own goroutine, unless one is in flight, so that ctx and
++			// MaxSlotWait can end the wait even if the refresh hangs.
++			c.sc.DelayDo(0, c._refreshIfDue)
++		}
++		select {
++		case <-fl.ch:
++			lastErr = fl.err
++		case <-paced:
++		case <-expiry.C:
++			if found() {
++				return nil
++			}
++			if atomic.LoadUint32(&c.stop) != 0 { // as in isClosingRedirect
++				return ErrClosing
++			}
++			if lastErr != nil {
++				return lastErr
++			}
++			return ErrNoSlot
++		case <-ctx.Done():
++			return ctx.Err()
++		case <-c.stopCh:
++			return ErrClosing
++		}
++	}
+ }
+ 
+ func (c *clusterClient) clusterRefreshStartDelay() time.Duration {
+@@ -601,12 +742,12 @@ func (c *clusterClient) _pick(slot uint16, toReplica bool) (p conn) {
+ 
+ func (c *clusterClient) pick(ctx context.Context, slot uint16, toReplica bool) (p conn, err error) {
+ 	if p = c._pick(slot, toReplica); p == nil {
+-		if err := c.refresh(ctx); err != nil {
++		if err := c.waitSlots(ctx, func() bool {
++			p = c._pick(slot, toReplica)
++			return p != nil
++		}); err != nil {
+ 			return nil, err
+ 		}
+-		if p = c._pick(slot, toReplica); p == nil {
+-			return nil, ErrNoSlot
+-		}
+ 	}
+ 	return p, nil
+ }
+@@ -871,12 +1012,12 @@ func (c *clusterClient) _pickMulti(multi []Completed) (retries *connretry, init
+ func (c *clusterClient) pickMulti(ctx context.Context, multi []Completed) (*connretry, bool, error) {
+ 	conns, hasInit := c._pickMulti(multi)
+ 	if conns == nil {
+-		if err := c.refresh(ctx); err != nil {
++		if err := c.waitSlots(ctx, func() bool {
++			conns, hasInit = c._pickMulti(multi)
++			return conns != nil
++		}); err != nil {
+ 			return nil, false, err
+ 		}
+-		if conns, hasInit = c._pickMulti(multi); conns == nil {
+-			return nil, false, ErrNoSlot
+-		}
+ 	}
+ 	return conns, hasInit, nil
+ }
+@@ -1449,12 +1590,12 @@ func (c *clusterClient) _pickMultiCache(multi []CacheableTTL) *connretrycache {
+ func (c *clusterClient) pickMultiCache(ctx context.Context, multi []CacheableTTL) (*connretrycache, error) {
+ 	conns := c._pickMultiCache(multi)
+ 	if conns == nil {
+-		if err := c.refresh(ctx); err != nil {
++		if err := c.waitSlots(ctx, func() bool {
++			conns = c._pickMultiCache(multi)
++			return conns != nil
++		}); err != nil {
+ 			return nil, err
+ 		}
+-		if conns = c._pickMultiCache(multi); conns == nil {
+-			return nil, ErrNoSlot
+-		}
+ 	}
+ 	return conns, nil
+ }
+diff --git a/cluster_test.go b/cluster_test.go
+index 97514ef..35904aa 100644
+--- a/cluster_test.go
++++ b/cluster_test.go
+@@ -12788,3 +12788,697 @@ func TestClusterClientRedirectToExistingConn(t *testing.T) {
+ 		}
+ 	})
+ }
++
++// Tests for the topology refresh options: ClusterOption.MinRefreshInterval and MaxSlotWait.
++
++// swNode is a node in a CLUSTER SHARDS reply built by swShardsReply.
++type swNode struct {
++	addr   string // host:port
++	role   string // "master" or "replica"
++	health string // "online", "fail", ...
++}
++
++// swShard is a shard in a CLUSTER SHARDS reply built by swShardsReply.
++type swShard struct {
++	nodes    []swNode
++	from, to int64
++}
++
++func swPrimary(addr string) swNode { return swNode{addr: addr, role: "master", health: "online"} }
++func swReplica(addr string) swNode { return swNode{addr: addr, role: "replica", health: "online"} }
++
++func swShardsReply(shards ...swShard) ValkeyResult {
++	reply := make([]ValkeyMessage, 0, len(shards))
++	for _, s := range shards {
++		nodes := make([]ValkeyMessage, 0, len(s.nodes))
++		for _, n := range s.nodes {
++			host, port, _ := net.SplitHostPort(n.addr)
++			p, _ := strconv.ParseInt(port, 10, 64)
++			nodes = append(nodes, slicemsg(typeMap, []ValkeyMessage{
++				strmsg(typeBlobString, "id"), strmsg(typeBlobString, n.addr),
++				strmsg(typeBlobString, "port"), {typ: typeInteger, intlen: p},
++				strmsg(typeBlobString, "ip"), strmsg(typeBlobString, host),
++				strmsg(typeBlobString, "endpoint"), strmsg(typeBlobString, host),
++				strmsg(typeBlobString, "role"), strmsg(typeBlobString, n.role),
++				strmsg(typeBlobString, "replication-offset"), {typ: typeInteger, intlen: 1},
++				strmsg(typeBlobString, "health"), strmsg(typeBlobString, n.health),
++			}))
++		}
++		reply = append(reply, slicemsg(typeMap, []ValkeyMessage{
++			strmsg(typeBlobString, "slots"), slicemsg(typeArray, []ValkeyMessage{
++				{typ: typeInteger, intlen: s.from}, {typ: typeInteger, intlen: s.to},
++			}),
++			strmsg(typeBlobString, "nodes"), slicemsg(typeArray, nodes),
++		}))
++	}
++	return NewResult(slicemsg(typeArray, reply), nil)
++}
++
++// swKeysInSlots returns n keys whose slots are in [from, to].
++func swKeysInSlots(n int, from, to uint16) []string {
++	b := cmds.NewBuilder(cmds.InitSlot)
++	keys := make([]string, 0, n)
++	for i := 0; len(keys) < n; i++ {
++		k := "key" + strconv.Itoa(i)
++		if cmd := b.Get().Key(k).Build(); cmd.Slot() >= from && cmd.Slot() <= to {
++			keys = append(keys, k)
++		}
++	}
++	return keys
++}
++
++func swIsClusterShards(cmd Completed) bool {
++	c := cmd.Commands()
++	return len(c) == 2 && c[0] == "CLUSTER" && c[1] == "SHARDS"
++}
++
++const (
++	swAddr1 = "10.0.0.1:6379" // primary of slots 0-8191
++	swAddr2 = "10.0.0.2:6379" // primary of slots 8192-16383, fails
++	swAddr3 = "10.0.0.3:6379" // replica of swAddr2, promoted in its place
++
++	// swSlack bounds how much later than expected a request may return in these tests (scheduling, -race).
++	swSlack = 150 * time.Millisecond
++)
++
++var (
++	swHealthy = []swShard{
++		{from: 0, to: 8191, nodes: []swNode{swPrimary(swAddr1)}},
++		{from: 8192, to: 16383, nodes: []swNode{swPrimary(swAddr2), swReplica(swAddr3)}},
++	}
++	// swFailingOver has no online primary for slots 8192-16383, so they have no node in the slot map.
++	swFailingOver = []swShard{
++		{from: 0, to: 8191, nodes: []swNode{swPrimary(swAddr1)}},
++		{from: 8192, to: 16383, nodes: []swNode{{addr: swAddr2, role: "master", health: "fail"}, swReplica(swAddr3)}},
++	}
++	swPromoted = []swShard{
++		{from: 0, to: 8191, nodes: []swNode{swPrimary(swAddr1)}},
++		{from: 8192, to: 16383, nodes: []swNode{swPrimary(swAddr3)}},
++	}
++	swPresentKey = swKeysInSlots(1, 0, 8191)[0]
++	swMissingKey = swKeysInSlots(1, 8192, 16383)[0]
++)
++
++// swCluster serves CLUSTER SHARDS from a topology that tests change, and answers other commands with the
++// address of the node that served them.
++type swCluster struct {
++	shardsErr error         // CLUSTER SHARDS fails with it when set
++	hold      chan struct{} // CLUSTER SHARDS blocks until it is closed when set
++	topology  ValkeyResult
++	refreshes []time.Time // when each CLUSTER SHARDS was received
++	mu        sync.Mutex
++}
++
++func newSWCluster(shards []swShard) *swCluster {
++	return &swCluster{topology: swShardsReply(shards...)}
++}
++
++func (m *swCluster) setTopology(shards []swShard) {
++	reply := swShardsReply(shards...)
++	m.mu.Lock()
++	m.topology = reply
++	m.mu.Unlock()
++}
++
++func (m *swCluster) setShardsErr(err error) {
++	m.mu.Lock()
++	m.shardsErr = err
++	m.mu.Unlock()
++}
++
++// holdShards makes CLUSTER SHARDS block until release is called.
++func (m *swCluster) holdShards() (release func()) {
++	ch := make(chan struct{})
++	m.mu.Lock()
++	m.hold = ch
++	m.mu.Unlock()
++	var once sync.Once
++	return func() {
++		once.Do(func() {
++			m.mu.Lock()
++			m.hold = nil
++			m.mu.Unlock()
++			close(ch)
++		})
++	}
++}
++
++func (m *swCluster) refreshTimes() []time.Time {
++	m.mu.Lock()
++	defer m.mu.Unlock()
++	return append([]time.Time(nil), m.refreshes...)
++}
++
++func (m *swCluster) refreshCount() int {
++	m.mu.Lock()
++	defer m.mu.Unlock()
++	return len(m.refreshes)
++}
++
++func (m *swCluster) do(addr string, cmd Completed) ValkeyResult {
++	if !swIsClusterShards(cmd) {
++		return NewResult(strmsg(typeBlobString, addr), nil)
++	}
++	m.mu.Lock()
++	m.refreshes = append(m.refreshes, time.Now())
++	hold, err, topology := m.hold, m.shardsErr, m.topology
++	m.mu.Unlock()
++	if hold != nil {
++		<-hold
++	}
++	if err != nil {
++		return NewErrorResult(err)
++	}
++	return topology
++}
++
++func (m *swCluster) connFn(dst string, _ *ClientOption) conn {
++	return &mockConn{
++		AddrFn:    func() string { return dst },
++		VersionFn: func() int { return 8 }, // CLUSTER SHARDS
++		DoFn:      func(cmd Completed) ValkeyResult { return m.do(dst, cmd) },
++		DoCacheFn: func(cmd Cacheable, _ time.Duration) ValkeyResult { return m.do(dst, Completed(cmd)) },
++		DoMultiFn: func(multi ...Completed) *valkeyresults {
++			resps := make([]ValkeyResult, len(multi))
++			for i, cmd := range multi {
++				resps[i] = m.do(dst, cmd)
++			}
++			return &valkeyresults{s: resps}
++		},
++		DoMultiCacheFn: func(multi ...CacheableTTL) *valkeyresults {
++			resps := make([]ValkeyResult, len(multi))
++			for i, ct := range multi {
++				resps[i] = m.do(dst, Completed(ct.Cmd))
++			}
++			return &valkeyresults{s: resps}
++		},
++	}
++}
++
++// newSWClient returns a client that refreshes from one discovery endpoint, like the clients this is for.
++func newSWClient(t *testing.T, m *swCluster, opt ClusterOption) *clusterClient {
++	t.Helper()
++	opt.PreferInitAddressRefresh = true
++	client, err := newClusterClient(
++		&ClientOption{InitAddress: []string{"discovery:6379"}, ClusterOption: opt},
++		m.connFn, newRetryer(defaultRetryDelayFn),
++	)
++	if err != nil {
++		t.Fatalf("newClusterClient: %v", err)
++	}
++	t.Cleanup(client.Close)
++	return client
++}
++
++func swGet(ctx context.Context, client *clusterClient, key string) (string, time.Duration, error) {
++	start := time.Now()
++	v, err := client.Do(ctx, client.B().Get().Key(key).Build()).ToString()
++	return v, time.Since(start), err
++}
++
++func swCheckWithin(t *testing.T, what string, got, from, to time.Duration) {
++	t.Helper()
++	if got < from || got > to {
++		t.Errorf("%s took %v, want between %v and %v", what, got, from, to)
++	}
++}
++
++// swCheckSpacing checks that refreshes were received at least interval apart.
++func swCheckSpacing(t *testing.T, times []time.Time, interval time.Duration) {
++	t.Helper()
++	for i := 1; i < len(times); i++ {
++		if gap := times[i].Sub(times[i-1]); gap < interval {
++			t.Errorf("refresh %d started %v after the previous one, want at least %v", i, gap, interval)
++		}
++	}
++}
++
++func TestClusterSlotWaitRejectsNegativeOptions(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	for _, tc := range []struct {
++		want error
++		name string
++		opt  ClusterOption
++	}{
++		{name: "MinRefreshInterval", opt: ClusterOption{MinRefreshInterval: -time.Millisecond}, want: ErrInvalidMinRefreshInterval},
++		{name: "MaxSlotWait", opt: ClusterOption{MaxSlotWait: -time.Millisecond}, want: ErrInvalidMaxSlotWait},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			m := newSWCluster(swHealthy)
++			client, err := newClusterClient(&ClientOption{InitAddress: []string{"discovery:6379"}, ClusterOption: tc.opt}, m.connFn, newRetryer(defaultRetryDelayFn))
++			if err != tc.want || client != nil {
++				t.Fatalf("got (%v, %v), want (nil, %v)", client, err, tc.want)
++			}
++			if n := m.refreshCount(); n != 0 {
++				t.Fatalf("the options were checked after %d refreshes, want before connecting", n)
++			}
++		})
++	}
++}
++
++// With the zero values, a request for a slot without a node refreshes once and fails with ErrNoSlot, as before.
++func TestClusterSlotWaitDefaultsFailFast(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	m := newSWCluster(swFailingOver)
++	client := newSWClient(t, m, ClusterOption{})
++	ctx := context.Background()
++	b := client.B()
++	for _, tc := range []struct {
++		do   func() error
++		name string
++	}{
++		{name: "Do", do: func() error { return client.Do(ctx, b.Get().Key(swMissingKey).Build()).Error() }},
++		{name: "DoCache", do: func() error { return client.DoCache(ctx, b.Get().Key(swMissingKey).Cache(), time.Minute).Error() }},
++		{name: "DoMulti", do: func() error {
++			return client.DoMulti(ctx, b.Get().Key(swPresentKey).Build(), b.Get().Key(swMissingKey).Build())[1].Error()
++		}},
++		{name: "DoMultiCache", do: func() error {
++			return client.DoMultiCache(ctx, CT(b.Get().Key(swPresentKey).Cache(), time.Minute), CT(b.Get().Key(swMissingKey).Cache(), time.Minute))[1].Error()
++		}},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			for i := 0; i < 3; i++ {
++				before := m.refreshCount()
++				start := time.Now()
++				if err := tc.do(); err != ErrNoSlot {
++					t.Fatalf("got %v, want ErrNoSlot", err)
++				}
++				swCheckWithin(t, "failing", time.Since(start), 0, swSlack)
++				if n := m.refreshCount() - before; n != 1 {
++					t.Fatalf("got %d refreshes, want 1", n)
++				}
++			}
++		})
++	}
++	if v, _, err := swGet(ctx, client, swPresentKey); err != nil || v != swAddr1 {
++		t.Fatalf("got (%q, %v) for a slot with a node, want (%q, nil)", v, err, swAddr1)
++	}
++}
++
++func TestClusterSlotWaitMinRefreshInterval(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	const interval = 100 * time.Millisecond
++
++	// hammer sends GETs for a slot without a node from 200 goroutines for d, and counts the results.
++	hammer := func(client *clusterClient, d time.Duration) (noSlot, other int64) {
++		var wg sync.WaitGroup
++		end := time.Now().Add(d)
++		for i := 0; i < 200; i++ {
++			wg.Add(1)
++			go func() {
++				defer wg.Done()
++				for time.Now().Before(end) {
++					if _, _, err := swGet(context.Background(), client, swMissingKey); err == ErrNoSlot {
++						atomic.AddInt64(&noSlot, 1)
++					} else {
++						atomic.AddInt64(&other, 1)
++					}
++				}
++			}()
++		}
++		wg.Wait()
++		return noSlot, other
++	}
++
++	t.Run("concurrent requests refresh at most once per interval and still fail fast", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MinRefreshInterval: interval})
++		noSlot, other := hammer(client, 550*time.Millisecond)
++		if noSlot == 0 || other != 0 {
++			t.Fatalf("got %d ErrNoSlot and %d other results, want only ErrNoSlot", noSlot, other)
++		}
++		times := m.refreshTimes()
++		swCheckSpacing(t, times, interval)
++		if len(times) < 4 { // the initial refresh and at least 3 more in 550ms
++			t.Fatalf("got %d refreshes, want at least 4", len(times))
++		}
++		t.Logf("%d requests, %d refreshes", noSlot, len(times))
++	})
++
++	t.Run("without it the same requests refresh far more often", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{})
++		noSlot, _ := hammer(client, 300*time.Millisecond)
++		if n := m.refreshCount(); n < 50 {
++			t.Fatalf("got %d refreshes, want many more than one per %v", n, interval)
++		}
++		t.Logf("%d requests, %d refreshes", noSlot, m.refreshCount())
++	})
++
++	t.Run("concurrent waiting requests refresh at most once per interval", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MinRefreshInterval: interval, MaxSlotWait: 450 * time.Millisecond})
++		var wg sync.WaitGroup
++		for i := 0; i < 200; i++ {
++			wg.Add(1)
++			go func() {
++				defer wg.Done()
++				if _, _, err := swGet(context.Background(), client, swMissingKey); err != ErrNoSlot {
++					t.Errorf("got %v, want ErrNoSlot after MaxSlotWait", err)
++				}
++			}()
++		}
++		wg.Wait()
++		times := m.refreshTimes()
++		swCheckSpacing(t, times, interval)
++		if len(times) < 4 {
++			t.Fatalf("got %d refreshes, want at least 4", len(times))
++		}
++	})
++
++	t.Run("refresh within the interval returns at once and does not join a pending lazy refresh", func(t *testing.T) {
++		m := newSWCluster(swHealthy)
++		client := newSWClient(t, m, ClusterOption{MinRefreshInterval: 300 * time.Millisecond})
++		client.lazyRefresh() // pending for at least the rest of the interval
++		start := time.Now()
++		if err := client.refresh(context.Background()); err != nil {
++			t.Fatalf("refresh: %v", err)
++		}
++		swCheckWithin(t, "refresh", time.Since(start), 0, 50*time.Millisecond)
++		if n := m.refreshCount(); n != 1 {
++			t.Fatalf("got %d refreshes, want only the initial one", n)
++		}
++		// lazyRefresh waits for the interval.
++		for deadline := time.Now().Add(3 * time.Second); m.refreshCount() < 2 && time.Now().Before(deadline); {
++			time.Sleep(5 * time.Millisecond)
++		}
++		times := m.refreshTimes()
++		if len(times) != 2 {
++			t.Fatalf("got %d refreshes, want the lazy refresh too", len(times))
++		}
++		swCheckSpacing(t, times, 300*time.Millisecond)
++		for client.sc.suppressing() != 0 { // let the lazy refresh finish
++			time.Sleep(time.Millisecond)
++		}
++	})
++
++	t.Run("refresh after the interval refreshes", func(t *testing.T) {
++		m := newSWCluster(swHealthy)
++		client := newSWClient(t, m, ClusterOption{MinRefreshInterval: interval})
++		time.Sleep(interval)
++		if err := client.refresh(context.Background()); err != nil {
++			t.Fatalf("refresh: %v", err)
++		}
++		if n := m.refreshCount(); n != 2 {
++			t.Fatalf("got %d refreshes, want 2", n)
++		}
++	})
++}
++
++// swWaitRefreshes waits until m has received n refreshes.
++func swWaitRefreshes(t *testing.T, m *swCluster, n int) {
++	t.Helper()
++	for deadline := time.Now().Add(3 * time.Second); m.refreshCount() < n; time.Sleep(time.Millisecond) {
++		if time.Now().After(deadline) {
++			t.Fatalf("got %d refreshes, want %d", m.refreshCount(), n)
++		}
++	}
++}
++
++// The lazy refresh checks MinRefreshInterval when its random delay is over, not when it is scheduled, so it
++// also waits for a refresh that finished in between.
++func TestClusterLazyRefreshMinRefreshInterval(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	const interval = 200 * time.Millisecond
++
++	t.Run("waits until the interval has passed", func(t *testing.T) {
++		m := newSWCluster(swHealthy)
++		client := newSWClient(t, m, ClusterOption{MinRefreshInterval: interval})
++		client.sc.DelayDo(0, client._lazyRefresh) // a lazy refresh whose random delay is over right after a refresh
++		swWaitRefreshes(t, m, 2)
++		swCheckSpacing(t, m.refreshTimes(), interval)
++	})
++
++	t.Run("starts at once after the interval", func(t *testing.T) {
++		m := newSWCluster(swHealthy)
++		client := newSWClient(t, m, ClusterOption{MinRefreshInterval: interval})
++		time.Sleep(interval) // for example, an idle client
++		start := time.Now()
++		client.sc.DelayDo(0, client._lazyRefresh)
++		swWaitRefreshes(t, m, 2)
++		swCheckWithin(t, "the lazy refresh", m.refreshTimes()[1].Sub(start), 0, swSlack)
++	})
++
++	t.Run("stops waiting when the client is closed", func(t *testing.T) {
++		m := newSWCluster(swHealthy)
++		client := newSWClient(t, m, ClusterOption{MinRefreshInterval: time.Minute})
++		client.sc.DelayDo(0, client._lazyRefresh)
++		client.Close()
++		for deadline := time.Now().Add(time.Second); client.sc.suppressing() != 0; time.Sleep(time.Millisecond) {
++			if time.Now().After(deadline) {
++				t.Fatal("the lazy refresh still waits for the interval after Close")
++			}
++		}
++		if n := m.refreshCount(); n != 1 {
++			t.Fatalf("got %d refreshes, want only the initial one", n)
++		}
++	})
++}
++
++func TestClusterSlotWaitResumesWhenSlotAppears(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	const promoteAfter = 300 * time.Millisecond
++	for _, tc := range []struct {
++		name     string
++		interval time.Duration
++	}{
++		{name: "without MinRefreshInterval", interval: 0},
++		{name: "refreshes limited by MinRefreshInterval", interval: 100 * time.Millisecond},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			m := newSWCluster(swFailingOver)
++			client := newSWClient(t, m, ClusterOption{MinRefreshInterval: tc.interval, MaxSlotWait: 3 * time.Second})
++			promote := time.AfterFunc(promoteAfter, func() { m.setTopology(swPromoted) })
++			defer promote.Stop()
++			v, took, err := swGet(context.Background(), client, swMissingKey)
++			if err != nil || v != swAddr3 {
++				t.Fatalf("got (%q, %v), want (%q, nil) from the promoted replica", v, err, swAddr3)
++			}
++			// Found by the first refresh after the promotion: within slotWaitMinGap, or one MinRefreshInterval.
++			swCheckWithin(t, "the request", took, promoteAfter, promoteAfter+tc.interval+slotWaitMinGap+swSlack)
++			if tc.interval > 0 {
++				swCheckSpacing(t, m.refreshTimes(), tc.interval)
++			}
++		})
++	}
++
++	// A waiting request wakes up when any refresh finishes, not only those it starts itself.
++	t.Run("woken by a refresh it did not start", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		// The initial refresh has just finished, so the request starts none of its own for a second.
++		client := newSWClient(t, m, ClusterOption{MinRefreshInterval: time.Second, MaxSlotWait: 3 * time.Second})
++		other := time.AfterFunc(promoteAfter, func() {
++			m.setTopology(swPromoted)
++			client.sc.DelayDo(0, client._refresh) // such as a refresh that ShardsRefreshInterval starts
++		})
++		defer other.Stop()
++		v, took, err := swGet(context.Background(), client, swMissingKey)
++		if err != nil || v != swAddr3 {
++			t.Fatalf("got (%q, %v), want (%q, nil) from the promoted replica", v, err, swAddr3)
++		}
++		swCheckWithin(t, "the request", took, promoteAfter, promoteAfter+swSlack)
++		if n := m.refreshCount(); n != 2 {
++			t.Fatalf("got %d refreshes, want the initial one and the other one", n)
++		}
++	})
++}
++
++func TestClusterSlotWaitGivesUpAfterMaxSlotWait(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	const maxWait = 200 * time.Millisecond
++
++	t.Run("ErrNoSlot", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MaxSlotWait: maxWait})
++		_, took, err := swGet(context.Background(), client, swMissingKey)
++		if err != ErrNoSlot {
++			t.Fatalf("got %v, want ErrNoSlot", err)
++		}
++		swCheckWithin(t, "the request", took, maxWait, maxWait+swSlack)
++	})
++
++	t.Run("last refresh error", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MaxSlotWait: maxWait})
++		refreshErr := errors.New("refresh failed")
++		m.setShardsErr(refreshErr)
++		_, took, err := swGet(context.Background(), client, swMissingKey)
++		if err != refreshErr {
++			t.Fatalf("got %v, want %v", err, refreshErr)
++		}
++		swCheckWithin(t, "the request", took, maxWait, maxWait+swSlack)
++	})
++
++	t.Run("last refresh error survives the wait for the next refresh", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MinRefreshInterval: time.Second, MaxSlotWait: maxWait})
++		time.Sleep(time.Second) // the next refresh is allowed
++		refreshErr := errors.New("refresh failed")
++		m.setShardsErr(refreshErr)
++		_, took, err := swGet(context.Background(), client, swMissingKey)
++		if err != refreshErr {
++			t.Fatalf("got %v, want %v", err, refreshErr)
++		}
++		swCheckWithin(t, "the request", took, maxWait, maxWait+swSlack)
++		if n := m.refreshCount(); n != 2 {
++			t.Fatalf("got %d refreshes, want 2", n)
++		}
++	})
++}
++
++func TestClusterSlotWaitHonorsContext(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	const timeout = 100 * time.Millisecond
++
++	// The context deadline, cancel and Close timers below start before swGet's own clock, so these
++	// subtests measure from before the timer starts: swGet's duration can be a little shorter than timeout.
++	t.Run("deadline", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MinRefreshInterval: 50 * time.Millisecond, MaxSlotWait: 5 * time.Second})
++		start := time.Now()
++		ctx, cancel := context.WithTimeout(context.Background(), timeout)
++		defer cancel()
++		_, _, err := swGet(ctx, client, swMissingKey)
++		took := time.Since(start)
++		if err != context.DeadlineExceeded {
++			t.Fatalf("got %v, want context.DeadlineExceeded", err)
++		}
++		swCheckWithin(t, "the request", took, timeout, timeout+swSlack)
++	})
++
++	t.Run("cancel", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MaxSlotWait: 5 * time.Second})
++		ctx, cancel := context.WithCancel(context.Background())
++		start := time.Now()
++		stop := time.AfterFunc(timeout, cancel)
++		defer stop.Stop()
++		_, _, err := swGet(ctx, client, swMissingKey)
++		took := time.Since(start)
++		if err != context.Canceled {
++			t.Fatalf("got %v, want context.Canceled", err)
++		}
++		swCheckWithin(t, "the request", took, timeout, timeout+swSlack)
++	})
++
++	t.Run("deadline while the refresh it started hangs", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MaxSlotWait: 5 * time.Second})
++		release := m.holdShards()
++		defer release()
++		start := time.Now()
++		ctx, cancel := context.WithTimeout(context.Background(), timeout)
++		defer cancel()
++		_, _, err := swGet(ctx, client, swMissingKey)
++		took := time.Since(start)
++		if err != context.DeadlineExceeded {
++			t.Fatalf("got %v, want context.DeadlineExceeded", err)
++		}
++		swCheckWithin(t, "the request", took, timeout, timeout+swSlack)
++		release()
++		for client.sc.suppressing() != 0 { // let the refresh finish
++			time.Sleep(time.Millisecond)
++		}
++	})
++
++	t.Run("MaxSlotWait while the refresh hangs", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MaxSlotWait: timeout})
++		release := m.holdShards()
++		defer release()
++		_, took, err := swGet(context.Background(), client, swMissingKey)
++		if err != ErrNoSlot {
++			t.Fatalf("got %v, want ErrNoSlot", err)
++		}
++		swCheckWithin(t, "the request", took, timeout, timeout+swSlack)
++		release()
++		for client.sc.suppressing() != 0 {
++			time.Sleep(time.Millisecond)
++		}
++	})
++
++	t.Run("client closed", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MaxSlotWait: 5 * time.Second})
++		start := time.Now()
++		closing := time.AfterFunc(timeout, client.Close)
++		defer closing.Stop()
++		_, _, err := swGet(context.Background(), client, swMissingKey)
++		took := time.Since(start)
++		if err != ErrClosing {
++			t.Fatalf("got %v, want ErrClosing", err)
++		}
++		swCheckWithin(t, "the request", took, timeout, timeout+swSlack)
++	})
++
++	// Close ends the wait at once, even while the refresh hangs.
++	t.Run("client closed while the refresh hangs", func(t *testing.T) {
++		m := newSWCluster(swFailingOver)
++		client := newSWClient(t, m, ClusterOption{MaxSlotWait: 5 * time.Second})
++		release := m.holdShards()
++		defer release()
++		start := time.Now()
++		closing := time.AfterFunc(timeout, client.Close)
++		defer closing.Stop()
++		_, _, err := swGet(context.Background(), client, swMissingKey)
++		took := time.Since(start)
++		if err != ErrClosing {
++			t.Fatalf("got %v, want ErrClosing", err)
++		}
++		swCheckWithin(t, "the request", took, timeout, timeout+swSlack)
++		release()
++		for client.sc.suppressing() != 0 {
++			time.Sleep(time.Millisecond)
++		}
++	})
++}
++
++// pickMulti and pickMultiCache wait the same way as pick.
++func TestClusterSlotWaitMultiCommandPaths(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	const promoteAfter = 200 * time.Millisecond
++	for _, tc := range []struct {
++		do   func(client *clusterClient) ([]string, error)
++		name string
++	}{
++		{name: "DoMulti", do: func(client *clusterClient) ([]string, error) {
++			b := client.B()
++			return swStrings(client.DoMulti(context.Background(), b.Get().Key(swPresentKey).Build(), b.Get().Key(swMissingKey).Build()))
++		}},
++		{name: "DoMultiCache", do: func(client *clusterClient) ([]string, error) {
++			b := client.B()
++			return swStrings(client.DoMultiCache(context.Background(),
++				CT(b.Get().Key(swPresentKey).Cache(), time.Minute), CT(b.Get().Key(swMissingKey).Cache(), time.Minute)))
++		}},
++		{name: "DoCache", do: func(client *clusterClient) ([]string, error) {
++			b := client.B()
++			v, err := client.DoCache(context.Background(), b.Get().Key(swMissingKey).Cache(), time.Minute).ToString()
++			return []string{swAddr1, v}, err
++		}},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			m := newSWCluster(swFailingOver)
++			client := newSWClient(t, m, ClusterOption{MinRefreshInterval: 50 * time.Millisecond, MaxSlotWait: 3 * time.Second})
++			promote := time.AfterFunc(promoteAfter, func() { m.setTopology(swPromoted) })
++			defer promote.Stop()
++			start := time.Now()
++			got, err := tc.do(client)
++			if err != nil || strings.Join(got, ",") != swAddr1+","+swAddr3 {
++				t.Fatalf("got (%v, %v), want ([%s %s], nil)", got, err, swAddr1, swAddr3)
++			}
++			swCheckWithin(t, tc.name, time.Since(start), promoteAfter, promoteAfter+50*time.Millisecond+slotWaitMinGap+swSlack)
++		})
++	}
++}
++
++func swStrings(resps []ValkeyResult) ([]string, error) {
++	out := make([]string, len(resps))
++	for i, r := range resps {
++		v, err := r.ToString()
++		if err != nil {
++			return nil, err
++		}
++		out[i] = v
++	}
++	return out, nil
++}
+diff --git a/singleflight.go b/singleflight.go
+index 4eb203f..5847bde 100644
+--- a/singleflight.go
++++ b/singleflight.go
+@@ -17,6 +17,7 @@ type flight struct {
+ type call struct {
+ 	ts time.Time
+ 	fl *flight
++	nx *flight // the flight that the next Do or DelayDo starts, once next has made it
+ 	cn int
+ 	mu sync.Mutex
+ }
+@@ -48,8 +49,7 @@ func (c *call) Do(ctx context.Context, fn func() error) error {
+ 		}
+ 		return fl.err
+ 	}
+-	fl = &flight{ch: make(chan struct{})}
+-	c.fl = fl
++	fl = c.start()
+ 	c.mu.Unlock()
+ 	return c.do(fl, fn)
+ }
+@@ -61,8 +61,7 @@ func (c *call) DelayDo(delay time.Duration, fn func() error) {
+ 		c.mu.Unlock()
+ 		return
+ 	}
+-	fl := &flight{ch: make(chan struct{})}
+-	c.fl = fl
++	fl := c.start()
+ 	c.cn++
+ 	c.mu.Unlock()
+ 	go func(delay time.Duration, fl *flight, fn func() error) {
+@@ -71,6 +70,33 @@ func (c *call) DelayDo(delay time.Duration, fn func() error) {
+ 	}(delay, fl, fn)
+ }
+ 
++// start makes a flight current and returns it: the one made by next, if any, so that its waiters get it.
++// c.mu must be held.
++func (c *call) start() *flight {
++	fl := c.nx
++	if fl == nil {
++		fl = &flight{ch: make(chan struct{})}
++	}
++	c.nx = nil
++	c.fl = fl
++	return fl
++}
++
++// next returns the flight in progress or, if there is none, the flight that the next Do or DelayDo
++// will start. Its ch is closed once it has run, so a caller can wait for the next completion without
++// polling, and without missing one that happens right after next returns.
++func (c *call) next() *flight {
++	c.mu.Lock()
++	defer c.mu.Unlock()
++	if c.fl != nil {
++		return c.fl
++	}
++	if c.nx == nil {
++		c.nx = &flight{ch: make(chan struct{})}
++	}
++	return c.nx
++}
++
+ func (c *call) do(fl *flight, fn func() error) error {
+ 	fl.err = fn()
+ 	c.mu.Lock()
+diff --git a/singleflight_test.go b/singleflight_test.go
+index ebfa182..cf9b018 100644
+--- a/singleflight_test.go
++++ b/singleflight_test.go
+@@ -336,3 +336,50 @@ func TestSingleFlightDelayDoHonorsDelay(t *testing.T) {
+ 		t.Fatalf("DelayDo never ran")
+ 	}
+ }
++
++// TestSingleFlightNext: next returns the flight in progress or, if there is none, the one that the next Do or
++// DelayDo starts, so that a caller can wait for the next completion and read its error.
++func TestSingleFlightNext(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	flightErr := errors.New("flight failed")
++	sg := call{}
++
++	fl := sg.next()
++	if sg.next() != fl {
++		t.Fatal("next should return the same flight until it starts")
++	}
++	select {
++	case <-fl.ch:
++		t.Fatal("a flight should not complete before it runs")
++	default:
++	}
++	block := make(chan struct{})
++	sg.DelayDo(0, func() error {
++		<-block
++		return flightErr
++	})
++	if sg.next() != fl {
++		t.Fatal("DelayDo should start the flight made by next")
++	}
++	close(block)
++	<-fl.ch
++	if fl.err != flightErr {
++		t.Fatalf("got %v, want the error of the flight", fl.err)
++	}
++
++	fl2 := sg.next()
++	if fl2 == fl {
++		t.Fatal("next should not return a flight that has completed")
++	}
++	if err := sg.Do(context.Background(), func() error { return nil }); err != nil {
++		t.Fatalf("unexpected err %v", err)
++	}
++	select {
++	case <-fl2.ch:
++	default:
++		t.Fatal("Do should start the flight made by next")
++	}
++	if fl2.err != nil {
++		t.Fatalf("got %v, want nil", fl2.err)
++	}
++}
+diff --git a/valkey.go b/valkey.go
+index 7a4d0fa..da872ac 100644
+--- a/valkey.go
++++ b/valkey.go
+@@ -329,6 +329,26 @@ type ClusterOption struct {
+ 	// Cluster topology cache refresh happens always in the background after a successful scan.
+ 	ShardsRefreshInterval time.Duration
+ 
++	// MinRefreshInterval is the minimum time between two cluster topology refreshes of this client.
++	// A request that finds no node for its slot, and would refresh the topology, re-reads the current
++	// slot map instead when the last refresh finished less than MinRefreshInterval ago.
++	// A lazy refresh, started for example by a MOVED reply, a connection error or ShardsRefreshInterval,
++	// is delayed until the interval has passed.
++	// This bounds the CLUSTER SLOTS/CLUSTER SHARDS commands the client sends, for example while a shard
++	// has no online primary during a failover and every request for its slots would refresh again.
++	// If the value is zero (default), concurrent refreshes are deduplicated but not rate limited.
++	MinRefreshInterval time.Duration
++
++	// MaxSlotWait is how long a request waits for its slot to have a node, for example while a shard has
++	// no online primary during a failover, before it fails with ErrNoSlot, or with the error of the last
++	// refresh it waited for. While waiting, it re-reads the slot map after each topology refresh, and
++	// starts a refresh whenever none is running, at most once per MinRefreshInterval or 10ms, whichever is
++	// longer. The waiting requests share these refreshes. The request is sent as soon as its slot has a
++	// node. The wait never outlasts the request's context: when the context is done, the request fails with
++	// the context's error.
++	// If the value is zero (default), the request fails with ErrNoSlot right after one refresh.
++	MaxSlotWait time.Duration
++
+ 	// MaxMovedRedirections is the maximum number of times to retry a command when receiving MOVED|ASK responses.
+ 	// If set to 0 (default), MOVED|ASK retries will continue until the context timeout.
+ 	// If set to a positive value, the client will return an error after that many MOVED|ASK redirects.
+-- 
+2.56.0.385.gac671c819a-goog
+
+
+From 5e183b8d257c18ecf4e375b27ffdf82ddeb6eac6 Mon Sep 17 00:00:00 2001
+From: Anurag Reddy Gunreddy <gunreddyg@google.com>
+Date: Tue, 3 Nov 2026 07:28:30 +0000
+Subject: [PATCH 3/7] perf(cluster): don't refresh the topology on ASK
+
+An ASK reply means that the slot is being migrated and is still owned by
+the node that replied, so the slot map is right and a topology refresh
+has nothing to learn. The MOVED replies that follow the migration
+refresh it. While a migration runs, every command for a key that has
+already moved gets ASK, and each of them scheduled a lazy refresh. Now
+only MOVED, CLUSTERDOWN, TRYAGAIN, LOADING and connection errors do.
+
+Signed-off-by: Anurag Reddy Gunreddy <gunreddyg@google.com>
+---
+ cluster.go      | 4 +++-
+ cluster_test.go | 7 +++++++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/cluster.go b/cluster.go
+index e75fda1..66e47e0 100644
+--- a/cluster.go
++++ b/cluster.go
+@@ -1909,7 +1909,9 @@ func (c *clusterClient) shouldRefreshRetry(err error, ctx context.Context) (addr
+ 		} else if ctx.Err() == nil {
+ 			mode = RedirectRetry
+ 		}
+-		if mode != RedirectNone {
++		// ASK means that the slot is being migrated and is still owned by the node that replied, so the slot
++		// map is right and a refresh has nothing to learn. The MOVED replies after the migration refresh it.
++		if mode != RedirectNone && mode != RedirectAsk {
+ 			c.lazyRefresh()
+ 		}
+ 	}
+diff --git a/cluster_test.go b/cluster_test.go
+index 35904aa..708bc62 100644
+--- a/cluster_test.go
++++ b/cluster_test.go
+@@ -12663,6 +12663,9 @@ func TestClusterClientRedirectToExistingConn(t *testing.T) {
+ 		if client._pick(5062, false) != owner {
+ 			t.Fatal("other slots must keep their owner")
+ 		}
++		if n := client.sc.suppressing(); n != 1 {
++			t.Fatalf("MOVED should schedule a topology refresh, got %d pending", n)
++		}
+ 
+ 		// the following commands go to the new owner directly
+ 		for i := 0; i < 10; i++ {
+@@ -12705,6 +12708,10 @@ func TestClusterClientRedirectToExistingConn(t *testing.T) {
+ 		if client._pick(5061, false) != owner {
+ 			t.Fatal("ASK is temporary and must not change the slot owner")
+ 		}
++		// The slot map is still right during the migration, so ASK does not schedule a refresh, unlike MOVED.
++		if n := client.sc.suppressing(); n != 0 {
++			t.Fatalf("ASK should not schedule a topology refresh, got %d pending", n)
++		}
+ 	})
+ 
+ 	// A MOVED that names the address of the node that answered it makes the client reconnect to that address, as a
+-- 
+2.56.0.385.gac671c819a-goog
+
+
+From d913bc141ceb40beafd7f20ba3861f5062b45b34 Mon Sep 17 00:00:00 2001
+From: Anurag Reddy Gunreddy <gunreddyg@google.com>
+Date: Tue, 3 Nov 2026 09:55:23 +0000
+Subject: [PATCH 4/7] feat(cluster): learn the new owner of a slot from MOVED
+ in Receive
+
+Receive retried a sharded subscription that got MOVED against the slot map,
+which still named the old owner until the next topology refresh. It now
+learns the new owner from the MOVED reply first, like the other command
+paths, so the retry subscribes there.
+
+A test checks that transactions, scripts, multi-key commands in one slot,
+DoMultiCache and sharded pub/sub each ask the old owner once and then go
+to the new owner.
+
+Signed-off-by: Anurag Reddy Gunreddy <gunreddyg@google.com>
+---
+ cluster.go      |  5 ++-
+ cluster_test.go | 98 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 102 insertions(+), 1 deletion(-)
+
+diff --git a/cluster.go b/cluster.go
+index 66e47e0..383823e 100644
+--- a/cluster.go
++++ b/cluster.go
+@@ -1804,7 +1804,10 @@ retry:
+ 	if err == errConnExpired {
+ 		goto retry
+ 	}
+-	if _, mode := c.shouldRefreshRetry(err, ctx); c.retry && mode != RedirectNone {
++	if addr, mode := c.shouldRefreshRetry(err, ctx); c.retry && mode != RedirectNone {
++		if mode == RedirectMove {
++			c.redirectOrNew(addr, cc, subscribe.Slot(), mode) // so that the retry goes to the new owner of the slot
++		}
+ 		shouldRetry := c.retryHandler.WaitOrSkipRetry(ctx, attempts, subscribe, err)
+ 		if shouldRetry {
+ 			attempts++
+diff --git a/cluster_test.go b/cluster_test.go
+index 708bc62..92b0214 100644
+--- a/cluster_test.go
++++ b/cluster_test.go
+@@ -13489,3 +13489,101 @@ func swStrings(resps []ValkeyResult) ([]string, error) {
+ 	}
+ 	return out, nil
+ }
++
++// Pub/sub and the other command paths learn the new owner of the slot from MOVED too.
++func TestClusterClientComplexCommandsLearnFromMoved(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	moved := NewResult(strmsg('-', "MOVED 5061 127.0.2.1:0"), nil)
++	ok := NewResult(strmsg('+', "OK"), nil)
++	newNodes := func() (owner, target *mockConn, ownerCalls *atomic.Int64) {
++		ownerCalls = &atomic.Int64{}
++		owner = &mockConn{
++			DoFn: func(cmd Completed) ValkeyResult { ownerCalls.Add(1); return moved },
++			DoMultiFn: func(multi ...Completed) *valkeyresults {
++				ownerCalls.Add(1)
++				resps := make([]ValkeyResult, len(multi))
++				for i, cmd := range multi {
++					if isMulti(cmd) {
++						resps[i] = ok // MULTI is accepted; the commands queued after it are redirected
++					} else {
++						resps[i] = moved
++					}
++				}
++				return &valkeyresults{s: resps}
++			},
++			DoMultiCacheFn: func(multi ...CacheableTTL) *valkeyresults {
++				ownerCalls.Add(1)
++				resps := make([]ValkeyResult, len(multi))
++				for i := range multi {
++					resps[i] = moved
++				}
++				return &valkeyresults{s: resps}
++			},
++			ReceiveFn: func(ctx context.Context, subscribe Completed, fn func(PubSubMessage)) error {
++				ownerCalls.Add(1)
++				return moved.Error()
++			},
++		}
++		target = &mockConn{
++			DoFn: func(cmd Completed) ValkeyResult { return ok },
++			DoMultiFn: func(multi ...Completed) *valkeyresults {
++				resps := make([]ValkeyResult, len(multi))
++				for i := range multi {
++					resps[i] = ok
++				}
++				return &valkeyresults{s: resps}
++			},
++			DoMultiCacheFn: func(multi ...CacheableTTL) *valkeyresults {
++				resps := make([]ValkeyResult, len(multi))
++				for i := range multi {
++					resps[i] = ok
++				}
++				return &valkeyresults{s: resps}
++			},
++			ReceiveFn: func(ctx context.Context, subscribe Completed, fn func(PubSubMessage)) error { return nil },
++		}
++		return owner, target, ownerCalls
++	}
++	for _, tc := range []struct {
++		send func(client *clusterClient) error
++		name string
++	}{
++		{name: "transaction", send: func(client *clusterClient) error {
++			b := client.B()
++			for _, r := range client.DoMulti(context.Background(), b.Multi().Build(), b.Set().Key("bar").Value("v").Build(), b.Exec().Build()) {
++				if err := r.Error(); err != nil {
++					return err
++				}
++			}
++			return nil
++		}},
++		{name: "script", send: func(client *clusterClient) error {
++			return client.Do(context.Background(), client.B().Eval().Script("return 1").Numkeys(1).Key("bar").Build()).Error()
++		}},
++		{name: "multi-key in one slot", send: func(client *clusterClient) error {
++			return client.Do(context.Background(), client.B().Mget().Key("{bar}a", "{bar}b").Build()).Error()
++		}},
++		{name: "DoMultiCache", send: func(client *clusterClient) error {
++			return client.DoMultiCache(context.Background(), CT(client.B().Get().Key("bar").Cache(), time.Minute))[0].Error()
++		}},
++		{name: "sharded pub/sub", send: func(client *clusterClient) error {
++			return client.Receive(context.Background(), client.B().Ssubscribe().Channel("bar").Build(), func(PubSubMessage) {})
++		}},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			owner, target, ownerCalls := newNodes()
++			client := newMovedTestClient(t, map[string]*mockConn{"127.0.0.1:0": owner, "127.0.2.1:0": target}, false)
++			for i := 0; i < 3; i++ {
++				if err := tc.send(client); err != nil {
++					t.Fatalf("attempt %d: unexpected err %v", i, err)
++				}
++			}
++			if n := ownerCalls.Load(); n != 1 {
++				t.Fatalf("the old owner was asked %d times, want once: the slot should be learned from its MOVED", n)
++			}
++			if client._pick(5061, false) != target {
++				t.Fatal("the slot should route to the new owner")
++			}
++		})
++	}
++}
+-- 
+2.56.0.385.gac671c819a-goog
+
+
+From da6f61ecd8b7c5e48bca15c6ace01a0e154368ce Mon Sep 17 00:00:00 2001
+From: Anurag Reddy Gunreddy <gunreddyg@google.com>
+Date: Tue, 3 Nov 2026 09:55:28 +0000
+Subject: [PATCH 5/7] fix(cluster): pace MOVED redirect loops
+
+Nodes that disagree on the owner of a slot redirect a command to each other.
+The client followed them at network speed until the command's context ended,
+and forever without a deadline. A redirect back to the node the command was
+first sent to also replaced that node's connection each time, because the
+"MOVED to the same address" reconnect compared the target with the first
+node instead of the node that sent the redirect.
+
+The client now follows two MOVED redirects of a command directly, so a slot
+that moved twice costs no wait. From the third one, it waits for the
+topology refresh that MOVED schedules and routes the command by the
+refreshed slot map, one round per refresh, until the nodes agree, the
+context ends or the client is closed. DoMulti and DoMultiCache do the same
+from their third round of redirects. The reconnect compares the target with
+the node that sent the redirect, so it happens when that node names its own
+address, as intended for endpoints that resolve to a new node, and not in a
+loop.
+
+The slot reconnect test now expects the reconnection to :0, which redirects
+the command to its own address, and the connections of the refresh that the
+third MOVED waits for.
+
+Signed-off-by: Anurag Reddy Gunreddy <gunreddyg@google.com>
+---
+ cluster.go      |  81 +++++++++++++++++++++-
+ cluster_test.go | 175 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 254 insertions(+), 2 deletions(-)
+
+diff --git a/cluster.go b/cluster.go
+index 383823e..d06d2e0 100644
+--- a/cluster.go
++++ b/cluster.go
+@@ -300,6 +300,55 @@ func (c *clusterClient) waitSlots(ctx context.Context, found func() bool) error
+ 	}
+ }
+ 
++// maxFollowedMoves is how many MOVED redirects of one request, or rounds of redirects of one DoMulti, the client
++// follows directly. A further one means that the nodes disagree on the owner of the slot, and would keep
++// redirecting the request to each other, or that the client's view is several moves behind. Then the client waits
++// for the topology refresh that MOVED schedules and routes the request by the refreshed slot map, at most one
++// round per refresh, instead of following the redirects at network speed until the request's context ends.
++const maxFollowedMoves = 2
++
++// waitRefresh waits until the topology refresh in flight, or the next one, has finished. It starts a lazy refresh
++// when none is in flight, so it never waits for a refresh that nothing starts. It fails with ctx.Err() when ctx
++// is done first, and with ErrClosing when the client is closed first.
++func (c *clusterClient) waitRefresh(ctx context.Context) error {
++	fl := c.sc.next()
++	c.lazyRefresh()
++	select {
++	case <-fl.ch:
++		return nil
++	case <-ctx.Done():
++		return ctx.Err()
++	case <-c.stopCh:
++		return ErrClosing
++	}
++}
++
++// fillPendingErrs sets err as the result of the commands still in retries, and returns results.
++func fillPendingErrs(results []ValkeyResult, retries *connretry, err error) []ValkeyResult {
++	for _, re := range retries.m {
++		for _, i := range re.cIndexes {
++			results[i] = NewErrorResult(err)
++		}
++		for _, i := range re.aIndexes {
++			results[i] = NewErrorResult(err)
++		}
++	}
++	return results
++}
++
++// fillPendingCacheErrs is fillPendingErrs for DoMultiCache.
++func fillPendingCacheErrs(results []ValkeyResult, retries *connretrycache, err error) []ValkeyResult {
++	for _, re := range retries.m {
++		for _, i := range re.cIndexes {
++			results[i] = NewErrorResult(err)
++		}
++		for _, i := range re.aIndexes {
++			results[i] = NewErrorResult(err)
++		}
++	}
++	return results
++}
++
+ func (c *clusterClient) clusterRefreshStartDelay() time.Duration {
+ 	maxDelay := c.clusterRefreshMaxDelay()
+ 	return time.Duration(util.FastRand(int(maxDelay)))
+@@ -830,6 +879,7 @@ func (c *clusterClient) Do(ctx context.Context, cmd Completed) (resp ValkeyResul
+ func (c *clusterClient) do(ctx context.Context, cmd Completed) (resp ValkeyResult) {
+ 	attempts := 1
+ 	redirects := 0
++	moves := 0
+ retry:
+ 	cc, err := c.pick(ctx, cmd.Slot(), c.toReplica(cmd))
+ 	if err != nil {
+@@ -846,7 +896,14 @@ process:
+ 		if c.opt.ClusterOption.MaxMovedRedirections > 0 && redirects > c.opt.ClusterOption.MaxMovedRedirections {
+ 			return resp
+ 		}
++		if moves++; moves > maxFollowedMoves {
++			if err := c.waitRefresh(ctx); err != nil {
++				return NewErrorResult(err)
++			}
++			goto retry
++		}
+ 		ncc := c.redirectOrNew(addr, cc, cmd.Slot(), mode)
++		cc = ncc // the node that answers next: a MOVED from it to its own address reconnects, one to another node does not
+ 	recover1:
+ 		resp = ncc.Do(ctx, cmd)
+ 		if resp.NonValkeyError() == errConnExpired {
+@@ -859,6 +916,7 @@ process:
+ 			return resp
+ 		}
+ 		ncc := c.redirectOrNew(addr, cc, cmd.Slot(), mode)
++		cc = ncc
+ 	recover2:
+ 		results := ncc.DoMulti(ctx, cmds.AskingCmd, cmd)
+ 		resp = results.s[1]
+@@ -1307,6 +1365,12 @@ retry:
+ 				return results.s
+ 			}
+ 			retries.Redirects = 0
++			if redirects > maxFollowedMoves { // as in do: let the topology refresh settle where to send them
++				if err := c.waitRefresh(ctx); err != nil {
++					return fillPendingErrs(results.s, retries, err)
++				}
++				c.rebucketRetries(retries)
++			}
+ 			goto retry
+ 		}
+ 		if retries.RetryDelay >= 0 {
+@@ -1336,6 +1400,7 @@ func fillErrs(n int, err error) (results []ValkeyResult) {
+ func (c *clusterClient) doCache(ctx context.Context, cmd Cacheable, ttl time.Duration) (resp ValkeyResult) {
+ 	attempts := 1
+ 	redirects := 0
++	moves := 0
+ 
+ retry:
+ 	cc, err := c.pick(ctx, cmd.Slot(), c.toReplica(Completed(cmd)))
+@@ -1353,7 +1418,14 @@ process:
+ 		if c.opt.ClusterOption.MaxMovedRedirections > 0 && redirects > c.opt.ClusterOption.MaxMovedRedirections {
+ 			return resp
+ 		}
++		if moves++; moves > maxFollowedMoves {
++			if err := c.waitRefresh(ctx); err != nil {
++				return NewErrorResult(err)
++			}
++			goto retry
++		}
+ 		ncc := c.redirectOrNew(addr, cc, cmd.Slot(), mode)
++		cc = ncc
+ 	recover:
+ 		resp = ncc.DoCache(ctx, cmd, ttl)
+ 		if resp.NonValkeyError() == errConnExpired {
+@@ -1365,7 +1437,8 @@ process:
+ 		if c.opt.ClusterOption.MaxMovedRedirections > 0 && redirects > c.opt.ClusterOption.MaxMovedRedirections {
+ 			return resp
+ 		}
+-		results := c.askingMultiCache(c.redirectOrNew(addr, cc, cmd.Slot(), mode), ctx, []CacheableTTL{CT(cmd, ttl)})
++		cc = c.redirectOrNew(addr, cc, cmd.Slot(), mode)
++		results := c.askingMultiCache(cc, ctx, []CacheableTTL{CT(cmd, ttl)})
+ 		resp = results.s[0]
+ 		resultsp.Put(results)
+ 		goto process
+@@ -1775,6 +1848,12 @@ retry:
+ 				return results.s
+ 			}
+ 			retries.Redirects = 0
++			if redirects > maxFollowedMoves { // as in do
++				if err := c.waitRefresh(ctx); err != nil {
++					return fillPendingCacheErrs(results.s, retries, err)
++				}
++				c.rebucketRetriesCache(retries)
++			}
+ 			goto retry
+ 		}
+ 		if retries.RetryDelay >= 0 {
+diff --git a/cluster_test.go b/cluster_test.go
+index 92b0214..83f7113 100644
+--- a/cluster_test.go
++++ b/cluster_test.go
+@@ -4287,7 +4287,9 @@ func TestClusterClientErr(t *testing.T) {
+ 		if v, err := client.Do(context.Background(), client.B().Get().Key("a").Build()).ToString(); err != nil || v != "b" {
+ 			t.Fatalf("unexpected resp %v %v", v, err)
+ 		}
+-		if atomic.LoadInt64(&check) != 6 {
++		// 6 connections for the init address and the topology, 1 more when :0 redirects the command to its own
++		// address, which reconnects to it, and 5 for the topology refresh that the third MOVED waits for.
++		if atomic.LoadInt64(&check) != 12 {
+ 			t.Fatalf("unexpected check count %v", check)
+ 		}
+ 	})
+@@ -13490,6 +13492,177 @@ func swStrings(resps []ValkeyResult) ([]string, error) {
+ 	return out, nil
+ }
+ 
++// loopCluster serves the topology slotsMultiResp, where 127.0.0.1:0 owns slot 5061, from nodes that answer every
++// command for that slot with MOVED to the other node, as nodes that disagree on its owner do, until agree is set:
++// then 127.0.0.1:0 serves it.
++type loopCluster struct {
++	calls atomic.Int64
++	agree atomic.Bool
++}
++
++func (l *loopCluster) reply(owner bool, other string) ValkeyResult {
++	l.calls.Add(1)
++	if owner && l.agree.Load() {
++		return NewResult(strmsg('+', "OK"), nil)
++	}
++	return NewResult(strmsg('-', "MOVED 5061 "+other), nil)
++}
++
++func (l *loopCluster) node(owner bool, other string) *mockConn {
++	return &mockConn{
++		DoOverride: map[string]func(cmd Completed) ValkeyResult{"CLUSTER SLOTS": func(Completed) ValkeyResult { return slotsMultiResp }},
++		DoFn:       func(cmd Completed) ValkeyResult { return l.reply(owner, other) },
++		DoCacheFn:  func(cmd Cacheable, ttl time.Duration) ValkeyResult { return l.reply(owner, other) },
++		DoMultiFn: func(multi ...Completed) *valkeyresults {
++			resps := make([]ValkeyResult, len(multi))
++			for i := range multi {
++				resps[i] = l.reply(owner, other)
++			}
++			return &valkeyresults{s: resps}
++		},
++	}
++}
++
++// newLoopClient returns a client of l. Each connection it makes is a new mockConn, so a reconnection shows.
++func newLoopClient(t *testing.T, l *loopCluster, opt ClusterOption) *clusterClient {
++	t.Helper()
++	client, err := newClusterClient(&ClientOption{InitAddress: []string{"127.0.0.1:0"}, ClusterOption: opt},
++		func(dst string, _ *ClientOption) conn {
++			switch dst {
++			case "127.0.0.1:0":
++				return l.node(true, "127.0.2.1:0")
++			case "127.0.2.1:0":
++				return l.node(false, "127.0.0.1:0")
++			}
++			return &mockConn{DoOverride: map[string]func(cmd Completed) ValkeyResult{"CLUSTER SLOTS": func(Completed) ValkeyResult { return slotsMultiResp }}}
++		}, newRetryer(defaultRetryDelayFn))
++	if err != nil {
++		t.Fatalf("unexpected err %v", err)
++	}
++	t.Cleanup(client.Close)
++	return client
++}
++
++// Nodes that redirect a command to each other used to be followed at network speed until the command's context
++// ended, forever without a deadline, and a redirect back to the first node replaced its connection each time.
++// Now the client follows two MOVED redirects directly, then waits for the topology refresh that MOVED schedules,
++// one round per refresh.
++func TestClusterClientRedirectLoop(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	opt := ClusterOption{MinRefreshInterval: 50 * time.Millisecond}
++
++	t.Run("paced until the deadline", func(t *testing.T) {
++		l := &loopCluster{}
++		client := newLoopClient(t, l, opt)
++		client.mu.RLock()
++		a, b := client.conns["127.0.0.1:0"].conn, client.conns["127.0.2.1:0"].conn
++		client.mu.RUnlock()
++		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
++		defer cancel()
++		start := time.Now()
++		err := client.Do(ctx, client.B().Get().Key("bar").Build()).Error()
++		if err != context.DeadlineExceeded {
++			t.Fatalf("got %v, want context.DeadlineExceeded", err)
++		}
++		swCheckWithin(t, "the command", time.Since(start), 300*time.Millisecond, 300*time.Millisecond+swSlack)
++		if n := l.calls.Load(); n > 20 { // 3 redirects, then one round per 50ms refresh
++			t.Fatalf("the nodes were asked %d times, want at most one round per refresh", n)
++		}
++		client.mu.RLock()
++		same := client.conns["127.0.0.1:0"].conn == a && client.conns["127.0.2.1:0"].conn == b
++		client.mu.RUnlock()
++		if !same {
++			t.Fatal("the loop should not replace the connections of the nodes it bounces between")
++		}
++	})
++
++	t.Run("ends when the client is closed", func(t *testing.T) {
++		l := &loopCluster{}
++		client := newLoopClient(t, l, opt)
++		closing := time.AfterFunc(100*time.Millisecond, client.Close)
++		defer closing.Stop()
++		start := time.Now()
++		if err := client.Do(context.Background(), client.B().Get().Key("bar").Build()).Error(); err != ErrClosing {
++			t.Fatalf("got %v, want ErrClosing", err)
++		}
++		swCheckWithin(t, "the command", time.Since(start), 100*time.Millisecond, 100*time.Millisecond+swSlack)
++	})
++
++	t.Run("settles when the nodes agree", func(t *testing.T) {
++		l := &loopCluster{}
++		client := newLoopClient(t, l, opt)
++		agree := time.AfterFunc(100*time.Millisecond, func() { l.agree.Store(true) })
++		defer agree.Stop()
++		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
++		defer cancel()
++		start := time.Now()
++		if v, err := client.Do(ctx, client.B().Get().Key("bar").Build()).ToString(); err != nil || v != "OK" {
++			t.Fatalf("got (%q, %v), want OK", v, err)
++		}
++		// at the latest with the lazy refresh after the agreement, which first waits its random delay of up to 1s
++		swCheckWithin(t, "the command", time.Since(start), 100*time.Millisecond, 100*time.Millisecond+time.Second+50*time.Millisecond+swSlack)
++	})
++
++	t.Run("DoMulti", func(t *testing.T) {
++		l := &loopCluster{}
++		client := newLoopClient(t, l, opt)
++		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
++		defer cancel()
++		resps := client.DoMulti(ctx, client.B().Get().Key("bar").Build(), client.B().Get().Key("bar").Build())
++		for i, r := range resps {
++			if err := r.Error(); err != context.DeadlineExceeded {
++				t.Fatalf("command %d: got %v, want context.DeadlineExceeded", i, err)
++			}
++		}
++		if n := l.calls.Load(); n > 40 {
++			t.Fatalf("the nodes were asked %d times, want at most one round per refresh", n)
++		}
++	})
++
++	t.Run("DoCache", func(t *testing.T) {
++		l := &loopCluster{}
++		client := newLoopClient(t, l, opt)
++		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
++		defer cancel()
++		if err := client.DoCache(ctx, client.B().Get().Key("bar").Cache(), time.Minute).Error(); err != context.DeadlineExceeded {
++			t.Fatalf("got %v, want context.DeadlineExceeded", err)
++		}
++	})
++}
++
++// A command redirected twice in a row, because the node it was sent to is two moves behind, still follows both
++// redirects directly.
++func TestClusterClientMovedTwoHops(t *testing.T) {
++	var calls [3]atomic.Int64
++	serve := func(i int, reply string) *mockConn {
++		return &mockConn{DoFn: func(cmd Completed) ValkeyResult {
++			calls[i].Add(1)
++			if reply == "" {
++				return NewResult(strmsg('+', "OK"), nil)
++			}
++			return NewResult(strmsg('-', reply), nil)
++		}}
++	}
++	// the slot map says 127.0.0.1:0, which says 127.0.2.1:0, which says 127.0.1.1:1
++	client := newMovedTestClient(t, map[string]*mockConn{
++		"127.0.0.1:0": serve(0, "MOVED 5061 127.0.2.1:0"),
++		"127.0.2.1:0": serve(1, "MOVED 5061 127.0.1.1:1"),
++		"127.0.1.1:1": serve(2, ""),
++	}, false)
++	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
++	defer cancel()
++	start := time.Now()
++	if v, err := client.Do(ctx, client.B().Get().Key("bar").Build()).ToString(); err != nil || v != "OK" {
++		t.Fatalf("got (%q, %v), want OK", v, err)
++	}
++	if took := time.Since(start); took > 100*time.Millisecond {
++		t.Fatalf("took %v: two hops should not wait for a refresh", took)
++	}
++	if calls[0].Load() != 1 || calls[1].Load() != 1 || calls[2].Load() != 1 {
++		t.Fatalf("got calls %d/%d/%d, want one each", calls[0].Load(), calls[1].Load(), calls[2].Load())
++	}
++}
++
+ // Pub/sub and the other command paths learn the new owner of the slot from MOVED too.
+ func TestClusterClientComplexCommandsLearnFromMoved(t *testing.T) {
+ 	defer ShouldNotLeak(SetupLeakDetection())
+-- 
+2.56.0.385.gac671c819a-goog
+
+
+From 3244c310ed4e8f78a98421e760c2e282004fb33b Mon Sep 17 00:00:00 2001
+From: Anurag Reddy Gunreddy <gunreddyg@google.com>
+Date: Tue, 3 Nov 2026 11:27:48 +0000
+Subject: [PATCH 6/7] test(cluster): run every command path through failovers
+ and a migration
+
+TestClusterFailoverScenarios sends Do, DoMulti, DoCache and DoMultiCache from
+20 goroutines through a crash, a crash with the promotion held, a planned
+failover and a slot migration, with the refresh options at their defaults
+and with short values. It checks that no command outlives its context, that
+the errors are the expected ones, that commands sent after the cluster
+settles succeed, and, with the options, that nothing fails with ErrNoSlot
+and that refreshes stay paced.
+
+TestClusterClientResumeAfterIdle checks that a client that was idle during
+a planned failover is redirected at most once per slot until the refresh.
+
+For both, the mocked cluster can now fail a node's commands as if it had
+crashed, and answer with MOVED from a node that is not the slot's primary.
+
+Signed-off-by: Anurag Reddy Gunreddy <gunreddyg@google.com>
+---
+ cluster_test.go | 255 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 252 insertions(+), 3 deletions(-)
+
+diff --git a/cluster_test.go b/cluster_test.go
+index 83f7113..02ae1e9 100644
+--- a/cluster_test.go
++++ b/cluster_test.go
+@@ -12889,26 +12889,63 @@ var (
+ )
+ 
+ // swCluster serves CLUSTER SHARDS from a topology that tests change, and answers other commands with the
+-// address of the node that served them.
++// address of the node that served them, or with MOVED when redirect is set and that node is not the primary
++// of the command's slot.
+ type swCluster struct {
+ 	shardsErr error         // CLUSTER SHARDS fails with it when set
+ 	hold      chan struct{} // CLUSTER SHARDS blocks until it is closed when set
+ 	topology  ValkeyResult
+-	refreshes []time.Time // when each CLUSTER SHARDS was received
++	shards    []swShard
++	refreshes []time.Time     // when each CLUSTER SHARDS was received
++	down      map[string]bool // commands to these nodes fail as if their connection could not be dialed
++	moved     int             // MOVED replies sent
++	redirect  bool            // when set, a node answers commands for the slots of another primary with MOVED
+ 	mu        sync.Mutex
+ }
+ 
++// setDown makes commands to addr fail as if the node had crashed, or serve again.
++func (m *swCluster) setDown(addr string, down bool) {
++	m.mu.Lock()
++	defer m.mu.Unlock()
++	if m.down == nil {
++		m.down = map[string]bool{}
++	}
++	m.down[addr] = down
++}
++
+ func newSWCluster(shards []swShard) *swCluster {
+-	return &swCluster{topology: swShardsReply(shards...)}
++	return &swCluster{topology: swShardsReply(shards...), shards: shards}
+ }
+ 
+ func (m *swCluster) setTopology(shards []swShard) {
+ 	reply := swShardsReply(shards...)
+ 	m.mu.Lock()
+ 	m.topology = reply
++	m.shards = shards
+ 	m.mu.Unlock()
+ }
+ 
++func (m *swCluster) movedCount() int {
++	m.mu.Lock()
++	defer m.mu.Unlock()
++	return m.moved
++}
++
++// swPrimaryOf returns the address of the online primary of slot in shards, or "".
++func swPrimaryOf(shards []swShard, slot uint16) string {
++	for _, s := range shards {
++		if int64(slot) < s.from || int64(slot) > s.to {
++			continue
++		}
++		for _, n := range s.nodes {
++			if n.role == "master" && n.health == "online" {
++				return n.addr
++			}
++		}
++	}
++	return ""
++}
++
+ func (m *swCluster) setShardsErr(err error) {
+ 	m.mu.Lock()
+ 	m.shardsErr = err
+@@ -12946,6 +12983,17 @@ func (m *swCluster) refreshCount() int {
+ 
+ func (m *swCluster) do(addr string, cmd Completed) ValkeyResult {
+ 	if !swIsClusterShards(cmd) {
++		m.mu.Lock()
++		defer m.mu.Unlock()
++		if m.down[addr] {
++			return NewErrorResult(&net.OpError{Op: "dial", Net: "tcp", Err: errors.New("connect: connection refused")})
++		}
++		if m.redirect && cmd.Slot() != cmds.InitSlot {
++			if owner := swPrimaryOf(m.shards, cmd.Slot()); owner != "" && owner != addr {
++				m.moved++
++				return NewResult(strmsg(typeSimpleErr, "MOVED "+strconv.Itoa(int(cmd.Slot()))+" "+owner), nil)
++			}
++		}
+ 		return NewResult(strmsg(typeBlobString, addr), nil)
+ 	}
+ 	m.mu.Lock()
+@@ -13492,6 +13540,207 @@ func swStrings(resps []ValkeyResult) ([]string, error) {
+ 	return out, nil
+ }
+ 
++// An idle client sends no commands while the cluster changes, so its slot map is stale when it resumes. Here
++// a planned failover made the replica of the second shard its primary while the client was idle. The first
++// command for one of its slots is redirected with MOVED, which routes that slot to the new primary and
++// schedules a lazy refresh for the other slots.
++func TestClusterClientResumeAfterIdle(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	failedOver := []swShard{
++		{from: 0, to: 8191, nodes: []swNode{swPrimary(swAddr1)}},
++		{from: 8192, to: 16383, nodes: []swNode{swPrimary(swAddr3), swReplica(swAddr2)}},
++	}
++	keys := swKeysInSlots(50, 8192, 16383)
++	slots := make(map[uint16]bool, len(keys))
++	for _, k := range keys {
++		cmd := cmds.NewBuilder(cmds.InitSlot).Get().Key(k).Build()
++		slots[cmd.Slot()] = true
++	}
++	getAll := func(t *testing.T, client *clusterClient) {
++		t.Helper()
++		for _, k := range keys {
++			if v, _, err := swGet(context.Background(), client, k); err != nil || v != swAddr3 {
++				t.Fatalf("got (%q, %v), want (%q, nil) from the new primary", v, err, swAddr3)
++			}
++		}
++	}
++
++	// With the default delay of up to 1s, each slot is redirected at most once until the refresh.
++	t.Run("default delay", func(t *testing.T) {
++		m := newSWCluster(swHealthy)
++		m.redirect = true
++		client := newSWClient(t, m, ClusterOption{})
++		m.setTopology(failedOver)
++		getAll(t, client)
++		if n := m.movedCount(); n < 1 || n > len(slots) {
++			t.Fatalf("got %d MOVED replies, want between 1 and %d, one per slot at most", n, len(slots))
++		}
++		moved := m.movedCount()
++		getAll(t, client)
++		if n := m.movedCount(); n != moved {
++			t.Fatalf("got %d more MOVED replies for slots already redirected", n-moved)
++		}
++	})
++}
++
++// TestClusterFailoverScenarios runs every command path from concurrent goroutines through a crash, a crash
++// with the promotion held, a planned failover and a slot migration, with the refresh options at their defaults
++// and with short values. It checks that no command outlives its context, that the errors are the expected
++// ones, that the commands sent after the cluster settles succeed, and, with the options, that no command
++// fails with ErrNoSlot and that the refreshes stay paced.
++func TestClusterFailoverScenarios(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++	const (
++		reqTimeout = 300 * time.Millisecond
++		runFor     = 2 * time.Second
++	)
++	promoted := []swShard{
++		{from: 0, to: 8191, nodes: []swNode{swPrimary(swAddr1)}},
++		{from: 8192, to: 16383, nodes: []swNode{swPrimary(swAddr3), {addr: swAddr2, role: "replica", health: "fail"}}},
++	}
++	plannedOver := []swShard{
++		{from: 0, to: 8191, nodes: []swNode{swPrimary(swAddr1)}},
++		{from: 8192, to: 16383, nodes: []swNode{swPrimary(swAddr3), swReplica(swAddr2)}},
++	}
++	migrated := []swShard{ // slots 8192-8291 moved to a primary added to scale out
++		{from: 0, to: 8191, nodes: []swNode{swPrimary(swAddr1)}},
++		{from: 8192, to: 8291, nodes: []swNode{swPrimary("10.0.0.4:6379")}},
++		{from: 8292, to: 16383, nodes: []swNode{swPrimary(swAddr2), swReplica(swAddr3)}},
++	}
++	type step struct {
++		at time.Duration
++		do func(m *swCluster)
++	}
++	scenarios := []struct {
++		name    string
++		settled time.Duration // when the last step happens
++		steps   []step
++	}{
++		{name: "crash", settled: 500 * time.Millisecond, steps: []step{
++			{100 * time.Millisecond, func(m *swCluster) { m.setDown(swAddr2, true) }},
++			{300 * time.Millisecond, func(m *swCluster) { m.setTopology(swFailingOver) }},
++			{500 * time.Millisecond, func(m *swCluster) { m.setTopology(promoted) }},
++		}},
++		{name: "promotion held", settled: 900 * time.Millisecond, steps: []step{
++			{100 * time.Millisecond, func(m *swCluster) { m.setDown(swAddr2, true) }},
++			{150 * time.Millisecond, func(m *swCluster) { m.setTopology(swFailingOver) }},
++			{900 * time.Millisecond, func(m *swCluster) { m.setTopology(promoted) }},
++		}},
++		{name: "planned failover", settled: 100 * time.Millisecond, steps: []step{
++			{100 * time.Millisecond, func(m *swCluster) { m.setTopology(plannedOver) }},
++		}},
++		{name: "migration", settled: 100 * time.Millisecond, steps: []step{
++			{100 * time.Millisecond, func(m *swCluster) { m.setTopology(migrated) }},
++		}},
++	}
++	variants := []struct {
++		name   string
++		opt    ClusterOption
++		settle time.Duration // how long after the last step every command must succeed
++	}{
++		{name: "defaults", settle: time.Second + 100*time.Millisecond},
++		// with the default refresh delay of up to 1s, a refresh scheduled before the promotion may come that late
++		{name: "options", opt: ClusterOption{MinRefreshInterval: 50 * time.Millisecond, MaxSlotWait: time.Second}, settle: time.Second + 100*time.Millisecond},
++	}
++	affected := swKeysInSlots(20, 8192, 16383)
++	healthy := swKeysInSlots(5, 0, 8191)
++	for _, sc := range scenarios {
++		for _, v := range variants {
++			t.Run(sc.name+"/"+v.name, func(t *testing.T) {
++				m := newSWCluster(swHealthy)
++				m.redirect = true
++				client := newSWClient(t, m, v.opt)
++				start := time.Now()
++				for _, st := range sc.steps {
++					tm := time.AfterFunc(st.at, func() { st.do(m) })
++					defer tm.Stop()
++				}
++				var (
++					mu       sync.Mutex
++					failures = map[string]int{}
++					late     []string
++				)
++				fail := func(what string, err error, began time.Time) {
++					mu.Lock()
++					defer mu.Unlock()
++					key := what + ": " + err.Error()
++					if since := began.Sub(start); since > sc.settled+v.settle {
++						late = append(late, fmt.Sprintf("%s at +%v", key, since.Round(time.Millisecond)))
++					}
++					failures[key]++
++				}
++				check := func(what string, began time.Time, errs ...error) {
++					if took := time.Since(began); took > reqTimeout+100*time.Millisecond {
++						t.Errorf("%s took %v, longer than its %v context", what, took, reqTimeout)
++					}
++					for _, err := range errs {
++						if err == nil || IsValkeyNil(err) {
++							continue
++						}
++						var opErr *net.OpError
++						switch {
++						case errors.Is(err, ErrNoSlot), errors.Is(err, context.DeadlineExceeded), errors.As(err, &opErr):
++						default:
++							t.Errorf("%s: unexpected error %v", what, err)
++						}
++						fail(what, err, began)
++					}
++				}
++				var wg sync.WaitGroup
++				for g := 0; g < 20; g++ {
++					wg.Add(1)
++					go func(g int) {
++						defer wg.Done()
++						b := client.B()
++						for i := 0; time.Since(start) < runFor; i++ {
++							k := affected[(g+i)%len(affected)]
++							if i%7 == 6 {
++								k = healthy[(g+i)%len(healthy)]
++							}
++							ctx, cancel := context.WithTimeout(context.Background(), reqTimeout)
++							began := time.Now()
++							switch i % 5 {
++							case 0:
++								check("Do GET", began, client.Do(ctx, b.Get().Key(k).Build()).Error())
++							case 1:
++								check("Do SET", began, client.Do(ctx, b.Set().Key(k).Value("v").Build()).Error())
++							case 2:
++								rs := client.DoMulti(ctx, b.Get().Key(k).Build(), b.Get().Key(affected[(g+i+1)%len(affected)]).Build(), b.Set().Key(k).Value("v").Build())
++								check("DoMulti", began, rs[0].Error(), rs[1].Error(), rs[2].Error())
++							case 3:
++								check("DoCache", began, client.DoCache(ctx, b.Get().Key(k).Cache(), time.Minute).Error())
++							case 4:
++								rs := client.DoMultiCache(ctx, CT(b.Get().Key(k).Cache(), time.Minute), CT(b.Get().Key(affected[(g+i+2)%len(affected)]).Cache(), time.Minute))
++								check("DoMultiCache", began, rs[0].Error(), rs[1].Error())
++							}
++							cancel()
++						}
++					}(g)
++				}
++				wg.Wait()
++				for _, l := range late {
++					t.Errorf("failed after the cluster settled: %s", l)
++				}
++				if v.opt.MaxSlotWait > 0 {
++					for k, n := range failures {
++						if strings.Contains(k, ErrNoSlot.Error()) {
++							t.Errorf("%d failures with ErrNoSlot despite MaxSlotWait: %s", n, k)
++						}
++					}
++				}
++				if iv := v.opt.MinRefreshInterval; iv > 0 {
++					times := m.refreshTimes()
++					swCheckSpacing(t, times, iv)
++					if limit := int(runFor/iv) + 3; len(times) > limit {
++						t.Errorf("got %d refreshes in %v, want at most %d", len(times), runFor, limit)
++					}
++				}
++				t.Logf("%d refreshes, %d MOVED replies, failures %v", m.refreshCount(), m.movedCount(), failures)
++			})
++		}
++	}
++}
++
+ // loopCluster serves the topology slotsMultiResp, where 127.0.0.1:0 owns slot 5061, from nodes that answer every
+ // command for that slot with MOVED to the other node, as nodes that disagree on its owner do, until agree is set:
+ // then 127.0.0.1:0 serves it.
+-- 
+2.56.0.385.gac671c819a-goog
+
+
+From bd0f08bd142fca24a11c1f6c08a4c8fc67bbd91c Mon Sep 17 00:00:00 2001
+From: Anurag Reddy Gunreddy <gunreddyg@google.com>
+Date: Tue, 3 Nov 2026 07:29:59 +0000
+Subject: [PATCH 7/7] feat(cluster): add MaxRefreshDelay
+
+A lazy topology refresh, the one that MOVED, CLUSTERDOWN, TRYAGAIN,
+LOADING, connection errors, closed connections and ShardsRefreshInterval
+start, first waits a random delay of up to 1s, growing to 30s in
+clusters of 1000 nodes. Until it finishes, commands are sent according
+to the old topology: after a failover, retries keep going to the old
+primary. MaxRefreshDelay sets the bound of that delay. The default, zero,
+keeps the bound that scales with the number of nodes, and NewClient
+rejects negative values (ErrInvalidMaxRefreshDelay).
+
+The delay also limits how often a client refreshes while errors
+continue, since no other lazy refresh starts while one waits, so a
+shorter delay should come with MinRefreshInterval. On a local Valkey
+9.0.6 cluster behind a discovery endpoint, with 200 clients, a 50ms
+delay alone stormed in all 6 primary crashes, with 23,707-54,200
+requests failing with ErrNoSlot; with MinRefreshInterval 250ms and
+MaxSlotWait 5s as well, no run stormed and no request failed with
+ErrNoSlot.
+
+The README shows the three options together, and the failover scenario
+and redirect loop tests also run with a 10ms delay.
+
+Signed-off-by: Anurag Reddy Gunreddy <gunreddyg@google.com>
+Co-authored-by: Vardhaman Sanjeev Viroje <viroje@google.com>
+---
+ README.md       |  11 ++--
+ cluster.go      |  11 +++-
+ cluster_test.go | 145 ++++++++++++++++++++++++++++++++++++++++++++++--
+ valkey.go       |  11 ++++
+ 4 files changed, 168 insertions(+), 10 deletions(-)
+
+diff --git a/README.md b/README.md
+index b500d64..f1ef909 100644
+--- a/README.md
++++ b/README.md
+@@ -516,15 +516,18 @@ Note that scaling the number of replicas on an existing shard (e.g. via ElastiCa
+ neither moves slots nor closes existing connections, so without `ShardsRefreshInterval`
+ the client never discovers the new replicas and continues reading the old shard.
+ 
+-While a shard has no primary, during a failover for example, a request for one of its slots refreshes the
+-topology and fails with `ErrNoSlot` at once, so a busy client can refresh the topology hundreds of times a
+-second until the new primary appears. To bound the refreshes and let requests wait for the new primary instead:
++After a failover, commands keep going to the old primary until the client refreshes the topology, which it does
++after a random delay of up to 1s (more in clusters of 100 nodes or more). And while a shard has no primary, a
++request for one of its slots refreshes the topology and fails with `ErrNoSlot` at once, so a busy client can
++refresh the topology hundreds of times a second until the new primary appears. To follow failovers sooner
++without that storm, shorten the delay, bound the refreshes and let requests wait for the new primary:
+ 
+ ```golang
+ client, err := valkey.NewClient(valkey.ClientOption{
+     InitAddress: []string{"127.0.0.1:7001", "127.0.0.1:7002", "127.0.0.1:7003"},
+     ClusterOption: valkey.ClusterOption{
+-        MinRefreshInterval: 250 * time.Millisecond, // refresh the topology at most once every 250ms
++        MaxRefreshDelay:    50 * time.Millisecond,  // refresh within 50ms of a MOVED reply or a connection error
++        MinRefreshInterval: 250 * time.Millisecond, // but at most once every 250ms
+         MaxSlotWait:        5 * time.Second,        // wait up to 5s for a slot without a node instead of failing with ErrNoSlot
+     },
+ })
+diff --git a/cluster.go b/cluster.go
+index d06d2e0..b48cdaf 100644
+--- a/cluster.go
++++ b/cluster.go
+@@ -25,6 +25,7 @@ var ErrReplicaSelectorConflictWithReadNodeSelector = errors.New("either set Repl
+ var ErrSendToReplicasNotSet = errors.New("SendToReplicas must be set when ReplicaSelector is set")
+ var ErrInvalidMinRefreshInterval = errors.New("MinRefreshInterval must be greater than or equal to 0")
+ var ErrInvalidMaxSlotWait = errors.New("MaxSlotWait must be greater than or equal to 0")
++var ErrInvalidMaxRefreshDelay = errors.New("MaxRefreshDelay must be greater than or equal to 0")
+ 
+ type clusterClient struct {
+ 	wslots       [16384]conn
+@@ -86,6 +87,9 @@ func newClusterClient(opt *ClientOption, connFn connFn, retryer retryHandler) (*
+ 	if opt.ClusterOption.MaxSlotWait < 0 {
+ 		return nil, ErrInvalidMaxSlotWait
+ 	}
++	if opt.ClusterOption.MaxRefreshDelay < 0 {
++		return nil, ErrInvalidMaxRefreshDelay
++	}
+ 	if opt.SendToReplicas != nil && opt.ReplicaSelector == nil && opt.ReadNodeSelector == nil {
+ 		opt.ReplicaSelector = replicaOnlySelector
+ 	}
+@@ -349,8 +353,13 @@ func fillPendingCacheErrs(results []ValkeyResult, retries *connretrycache, err e
+ 	return results
+ }
+ 
++// clusterRefreshStartDelay returns the random delay of a lazy refresh, below ClusterOption.MaxRefreshDelay or,
++// by default, below a bound that grows with the number of nodes.
+ func (c *clusterClient) clusterRefreshStartDelay() time.Duration {
+-	maxDelay := c.clusterRefreshMaxDelay()
++	maxDelay := c.opt.ClusterOption.MaxRefreshDelay
++	if maxDelay <= 0 {
++		maxDelay = c.clusterRefreshMaxDelay()
++	}
+ 	return time.Duration(util.FastRand(int(maxDelay)))
+ }
+ 
+diff --git a/cluster_test.go b/cluster_test.go
+index 02ae1e9..dcae7a8 100644
+--- a/cluster_test.go
++++ b/cluster_test.go
+@@ -11526,7 +11526,7 @@ func clusterClientWithConnCount(n int) *clusterClient {
+ 	for i := 0; i < n; i++ {
+ 		conns[fmt.Sprintf("%d", i)] = connrole{}
+ 	}
+-	return &clusterClient{conns: conns}
++	return &clusterClient{conns: conns, opt: &ClientOption{}}
+ }
+ 
+ func TestClusterClientRefreshClosesConnAddedWhileUnlocked(t *testing.T) {
+@@ -13079,6 +13079,7 @@ func TestClusterSlotWaitRejectsNegativeOptions(t *testing.T) {
+ 	}{
+ 		{name: "MinRefreshInterval", opt: ClusterOption{MinRefreshInterval: -time.Millisecond}, want: ErrInvalidMinRefreshInterval},
+ 		{name: "MaxSlotWait", opt: ClusterOption{MaxSlotWait: -time.Millisecond}, want: ErrInvalidMaxSlotWait},
++		{name: "MaxRefreshDelay", opt: ClusterOption{MaxRefreshDelay: -time.Millisecond}, want: ErrInvalidMaxRefreshDelay},
+ 	} {
+ 		t.Run(tc.name, func(t *testing.T) {
+ 			m := newSWCluster(swHealthy)
+@@ -13540,6 +13541,115 @@ func swStrings(resps []ValkeyResult) ([]string, error) {
+ 	return out, nil
+ }
+ 
++func TestClusterRefreshStartDelayWithMaxRefreshDelay(t *testing.T) {
++	t.Run("overrides a larger automatic bound", func(t *testing.T) {
++		maxDelay := 50 * time.Millisecond
++		c := clusterClientWithConnCount(1000) // the automatic bound is 30s
++		c.opt.ClusterOption.MaxRefreshDelay = maxDelay
++		for i := 0; i < 1000; i++ {
++			if d := c.clusterRefreshStartDelay(); d < 0 || d >= maxDelay {
++				t.Fatalf("iteration %d: start delay %v out of [0, %v)", i, d, maxDelay)
++			}
++		}
++	})
++	t.Run("overrides a smaller automatic bound", func(t *testing.T) {
++		maxDelay := 10 * time.Second
++		c := clusterClientWithConnCount(1) // the automatic bound is 1s
++		c.opt.ClusterOption.MaxRefreshDelay = maxDelay
++		var longest time.Duration
++		for i := 0; i < 1000; i++ {
++			d := c.clusterRefreshStartDelay()
++			if d < 0 || d >= maxDelay {
++				t.Fatalf("iteration %d: start delay %v out of [0, %v)", i, d, maxDelay)
++			}
++			longest = max(longest, d)
++		}
++		if longest < time.Second {
++			t.Fatalf("longest start delay %v, expected some above the 1s automatic bound", longest)
++		}
++	})
++	t.Run("keeps the batch delay scaled by cluster size", func(t *testing.T) {
++		c := clusterClientWithConnCount(1000)
++		c.opt.ClusterOption.MaxRefreshDelay = 50 * time.Millisecond
++		if got, want := c.clusterRefreshBatchDelay(), 100*time.Millisecond; got != want {
++			t.Fatalf("batch delay %v, want %v", got, want)
++		}
++	})
++}
++
++func TestClusterClientRetryFollowsFailoverWithMaxRefreshDelay(t *testing.T) {
++	defer ShouldNotLeak(SetupLeakDetection())
++
++	// After the failover, the old primary 127.0.0.1:0 is unreachable and
++	// its replica 127.0.1.1:1 has been promoted to own all slots.
++	promotedResp := NewResult(slicemsg('*', []ValkeyMessage{
++		slicemsg('*', []ValkeyMessage{
++			{typ: ':', intlen: 0},
++			{typ: ':', intlen: 16383},
++			slicemsg('*', []ValkeyMessage{ // master
++				strmsg('+', "127.0.1.1"),
++				{typ: ':', intlen: 1},
++				strmsg('+', ""),
++			}),
++		}),
++	}), nil)
++	var failedOver atomic.Bool
++	var oldPrimaryGets int64
++	oldPrimary := &mockConn{
++		DoFn: func(cmd Completed) ValkeyResult {
++			if strings.Join(cmd.Commands(), " ") == "CLUSTER SLOTS" {
++				if failedOver.Load() {
++					return NewErrorResult(io.EOF)
++				}
++				return slotsResp
++			}
++			atomic.AddInt64(&oldPrimaryGets, 1)
++			return NewErrorResult(io.EOF)
++		},
++	}
++	newPrimary := &mockConn{
++		DoFn: func(cmd Completed) ValkeyResult {
++			if strings.Join(cmd.Commands(), " ") == "CLUSTER SLOTS" {
++				if failedOver.Load() {
++					return promotedResp
++				}
++				return slotsResp
++			}
++			return NewResult(strmsg('+', "OK"), nil)
++		},
++	}
++	client, err := newClusterClient(
++		&ClientOption{
++			InitAddress:   []string{"127.0.0.1:0"},
++			ClusterOption: ClusterOption{MaxRefreshDelay: 10 * time.Millisecond},
++		},
++		func(dst string, opt *ClientOption) conn {
++			if dst == "127.0.1.1:1" {
++				return newPrimary
++			}
++			return oldPrimary
++		},
++		newRetryer(defaultRetryDelayFn),
++	)
++	if err != nil {
++		t.Fatalf("unexpected err %v", err)
++	}
++	defer client.Close()
++
++	failedOver.Store(true)
++
++	// The refresh triggered by the first failed attempt starts within 10ms instead of
++	// up to 1s, so the retries reach the promoted replica well before the deadline.
++	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
++	defer cancel()
++	if v, err := client.Do(ctx, client.B().Get().Key("k").Build()).ToString(); err != nil || v != "OK" {
++		t.Fatalf("unexpected response %v %v", v, err)
++	}
++	if atomic.LoadInt64(&oldPrimaryGets) == 0 {
++		t.Fatalf("expected the first attempt to be sent to the old primary")
++	}
++}
++
+ // An idle client sends no commands while the cluster changes, so its slot map is stale when it resumes. Here
+ // a planned failover made the replica of the second shard its primary while the client was idle. The first
+ // command for one of its slots is redirected with MOVED, which routes that slot to the new primary and
+@@ -13565,6 +13675,31 @@ func TestClusterClientResumeAfterIdle(t *testing.T) {
+ 		}
+ 	}
+ 
++	// With MaxRefreshDelay, the refresh follows the first MOVED within milliseconds, and the commands for the
++	// shard's other slots go to the new primary directly.
++	t.Run("MaxRefreshDelay", func(t *testing.T) {
++		const interval = 50 * time.Millisecond
++		m := newSWCluster(swHealthy)
++		m.redirect = true
++		client := newSWClient(t, m, ClusterOption{MaxRefreshDelay: 10 * time.Millisecond, MinRefreshInterval: interval})
++		time.Sleep(interval) // idle
++		m.setTopology(failedOver)
++
++		start := time.Now()
++		if v, _, err := swGet(context.Background(), client, keys[0]); err != nil || v != swAddr3 {
++			t.Fatalf("got (%q, %v), want (%q, nil) from the new primary", v, err, swAddr3)
++		}
++		swWaitRefreshes(t, m, 2)
++		swCheckWithin(t, "the refresh after the first MOVED", m.refreshTimes()[1].Sub(start), 0, 10*time.Millisecond+swSlack)
++		for client.sc.suppressing() != 0 { // let it install the slot map
++			time.Sleep(time.Millisecond)
++		}
++		getAll(t, client)
++		if n := m.movedCount(); n != 1 {
++			t.Fatalf("got %d MOVED replies, want 1", n)
++		}
++	})
++
+ 	// With the default delay of up to 1s, each slot is redirected at most once until the refresh.
+ 	t.Run("default delay", func(t *testing.T) {
+ 		m := newSWCluster(swHealthy)
+@@ -13641,6 +13776,7 @@ func TestClusterFailoverScenarios(t *testing.T) {
+ 		{name: "defaults", settle: time.Second + 100*time.Millisecond},
+ 		// with the default refresh delay of up to 1s, a refresh scheduled before the promotion may come that late
+ 		{name: "options", opt: ClusterOption{MinRefreshInterval: 50 * time.Millisecond, MaxSlotWait: time.Second}, settle: time.Second + 100*time.Millisecond},
++		{name: "options and MaxRefreshDelay", opt: ClusterOption{MaxRefreshDelay: 10 * time.Millisecond, MinRefreshInterval: 50 * time.Millisecond, MaxSlotWait: time.Second}, settle: 150 * time.Millisecond},
+ 	}
+ 	affected := swKeysInSlots(20, 8192, 16383)
+ 	healthy := swKeysInSlots(5, 0, 8191)
+@@ -13798,7 +13934,7 @@ func newLoopClient(t *testing.T, l *loopCluster, opt ClusterOption) *clusterClie
+ // one round per refresh.
+ func TestClusterClientRedirectLoop(t *testing.T) {
+ 	defer ShouldNotLeak(SetupLeakDetection())
+-	opt := ClusterOption{MinRefreshInterval: 50 * time.Millisecond}
++	opt := ClusterOption{MaxRefreshDelay: 10 * time.Millisecond, MinRefreshInterval: 50 * time.Millisecond}
+ 
+ 	t.Run("paced until the deadline", func(t *testing.T) {
+ 		l := &loopCluster{}
+@@ -13842,14 +13978,13 @@ func TestClusterClientRedirectLoop(t *testing.T) {
+ 		client := newLoopClient(t, l, opt)
+ 		agree := time.AfterFunc(100*time.Millisecond, func() { l.agree.Store(true) })
+ 		defer agree.Stop()
+-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
++		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+ 		defer cancel()
+ 		start := time.Now()
+ 		if v, err := client.Do(ctx, client.B().Get().Key("bar").Build()).ToString(); err != nil || v != "OK" {
+ 			t.Fatalf("got (%q, %v), want OK", v, err)
+ 		}
+-		// at the latest with the lazy refresh after the agreement, which first waits its random delay of up to 1s
+-		swCheckWithin(t, "the command", time.Since(start), 100*time.Millisecond, 100*time.Millisecond+time.Second+50*time.Millisecond+swSlack)
++		swCheckWithin(t, "the command", time.Since(start), 100*time.Millisecond, 100*time.Millisecond+50*time.Millisecond+swSlack)
+ 	})
+ 
+ 	t.Run("DoMulti", func(t *testing.T) {
+diff --git a/valkey.go b/valkey.go
+index da872ac..a873d2c 100644
+--- a/valkey.go
++++ b/valkey.go
+@@ -329,6 +329,17 @@ type ClusterOption struct {
+ 	// Cluster topology cache refresh happens always in the background after a successful scan.
+ 	ShardsRefreshInterval time.Duration
+ 
++	// MaxRefreshDelay is the upper bound of the random delay before a lazy cluster topology refresh: the
++	// refresh that a MOVED redirection, a CLUSTERDOWN, TRYAGAIN or LOADING error, a connection error, a closed
++	// connection or ShardsRefreshInterval starts. Until it finishes, commands are sent according to the old
++	// topology, for example retries to a primary that has failed over, so a smaller value lets them reach the
++	// new nodes sooner. The random delay spreads the refreshes of many clients over time and, as no other lazy
++	// refresh starts while one waits, it also bounds how often each client refreshes while errors continue:
++	// when you lower it, set MinRefreshInterval too.
++	// If the value is zero (default), the bound depends on the number of nodes: 1s below 100 nodes, growing
++	// linearly to 30s at 1000 nodes or more.
++	MaxRefreshDelay time.Duration
++
+ 	// MinRefreshInterval is the minimum time between two cluster topology refreshes of this client.
+ 	// A request that finds no node for its slot, and would refresh the topology, re-reads the current
+ 	// slot map instead when the last refresh finished less than MinRefreshInterval ago.
+-- 
+2.56.0.385.gac671c819a-goog
+

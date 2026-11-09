@@ -1,0 +1,39 @@
+bench: label=r2 run=1 build=r2 options=map[MaxRefreshDelay:0s MinRefreshInterval:0s ShardsRefreshInterval:10s]
+bench: 200 goroutines, 20s, 2s per request, 1000 keys in slots [[0 5460]] of primary 127.0.0.1:7101; no failure
+
+=== result label=r2 run=1 build=r2 options=map[MaxRefreshDelay:0s MinRefreshInterval:0s ShardsRefreshInterval:10s] mode=none hold=0s ===
+failed primary 127.0.0.1:7101 (slots [[0 5460]]): failure at t=-1.000s, restored at t=-1.000s
+requests 6602307: ok 6602307, ErrNoSlot 0, context deadline 0, other 0
+longest success 4.5ms (started at t=0.374s); first success after the failure never; errors from t=-1.000s to never after the failure; ErrNoSlot from never to never
+CLUSTER SHARDS sent: 1 while creating the client, 1 during the run, 0 after the failure, 0 in the no-primary window, max 1/s; by address map[127.0.0.1:16379:2]
+CLUSTER SHARDS to other addresses than the discovery endpoint 127.0.0.1:16379: 0 (0 during the run); CLUSTER GETSLOTMIGRATIONS: 0 during the run, by address map[]
+dials: 127.0.0.1:16379=1 127.0.0.1:7101=1
+topology (CLUSTER SHARDS on every node every 100ms): old primary flagged fail never; no online primary from never to never (-1ms, 0 polls on 0 nodes); new primary  never
+promotion never (; PROMOTE line never, FLAGGED_FAIL line never); promotion → first success n/a; client traffic to the old primary until never after the promotion, its last MOVED never after it
+server errors (INFO errorstats, all nodes, before → after the run): MOVED 0, ASK 0, other map[]; restarts map[]
+latency of successes: run n=6602307 p50 0.552ms p99 1.744ms p999 2.592ms max 4.6ms; 330106 ops/s over 20.0s
+timeline (by request end time):
+     t        ok  ErrNoSlot   deadline      other  CLUSTER_SHARDS  MOVED(srv)  ASK(srv)
+    0s    293986          0          0          0          0           0         0
+    1s    336167          0          0          0          0           0         0
+    2s    327029          0          0          0          0           0         0
+    3s    324512          0          0          0          0           0         0
+    4s    334308          0          0          0          0           0         0
+    5s    330709          0          0          0          0           0         0
+    6s    329490          0          0          0          0           0         0
+    7s    331855          0          0          0          0           0         0
+    8s    331660          0          0          0          0           0         0
+    9s    336442          0          0          0          0           0         0
+   10s    334236          0          0          0          1           0         0
+   11s    332466          0          0          0          0           0         0
+   12s    334163          0          0          0          0           0         0
+   13s    306409          0          0          0          0           0         0
+   14s    336817          0          0          0          0           0         0
+   15s    339564          0          0          0          0           0         0
+   16s    338832          0          0          0          0           0         0
+   17s    337929          0          0          0          0           0         0
+   18s    333870          0          0          0          0           0         0
+   19s    331537          0          0          0          0           0         0
+   20s       326          0          0          0          0           0         0
+   21s         0          0          0          0          0           0         0
+   22s         0          0          0          0          0           0         0

@@ -1,0 +1,474 @@
+7101| 8:M 09 Nov 2026 03:58:25.313 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7101| 8:M 09 Nov 2026 03:58:25.313 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7101| 8:M 09 Nov 2026 03:58:25.313 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=8, just started
+7101| 8:M 09 Nov 2026 03:58:25.313 * Configuration loaded
+7101| 8:M 09 Nov 2026 03:58:25.314 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7101| 8:M 09 Nov 2026 03:58:25.314 * monotonic clock: POSIX clock_gettime
+7101| 8:M 09 Nov 2026 03:58:25.314 * Running mode=cluster, port=7101.
+7101| 8:M 09 Nov 2026 03:58:25.315 * No cluster configuration found, I'm 3885ce7b8015104465ae2ec9009b6b5fdfd88655
+7101| 8:M 09 Nov 2026 03:58:25.321 * Server initialized
+7101| 8:M 09 Nov 2026 03:58:25.321 * Ready to accept connections tcp
+7101| 8:M 09 Nov 2026 03:58:26.102 * configEpoch set to 1 via CLUSTER SET-CONFIG-EPOCH
+7101| 8:M 09 Nov 2026 03:58:26.435 * Mismatch in topology information for sender node 093a43097d5c9dba770f3f544c7b0f6bf266644e () in shard a297f266436bfca1bb2f3e023b06b3f654ceed93
+7101| 8:M 09 Nov 2026 03:58:26.655 * Mismatch in topology information for sender node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard bd061af05b52f836b81b2fa350ea051121f9abd4
+7101| 8:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is no longer primary of shard 4c31de42b51d4a610a20b1da1856362ddc8d0361; removed all 0 slot(s) it used to own
+7101| 8:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is now part of shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is now a replica of node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is no longer primary of shard 9bb7f88620debcab52c0ad83b76f4a35a154b52c; removed all 0 slot(s) it used to own
+7101| 8:M 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is now part of shard f9714020123f942e3f099dadb969c231ab83ccfc
+7101| 8:M 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is now a replica of node 093a43097d5c9dba770f3f544c7b0f6bf266644e () in shard f9714020123f942e3f099dadb969c231ab83ccfc
+7101| 8:M 09 Nov 2026 03:58:27.126 * Replica 127.0.0.1:7104 asks for synchronization
+7101| 8:M 09 Nov 2026 03:58:27.126 * Full resync requested by replica 127.0.0.1:7104
+7101| 8:M 09 Nov 2026 03:58:27.126 * Replication backlog created, my new replication IDs are 'a3b9ed275876c719f91cdde8abceb33c07b4d565' and '0000000000000000000000000000000000000000'
+7101| 8:M 09 Nov 2026 03:58:27.126 * Delay next BGSAVE for diskless SYNC
+7101| 8:M 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is no longer primary of shard 5fd577da4db262c5792abfc5534d38ecb5da7e01; removed all 0 slot(s) it used to own
+7101| 8:M 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is now part of shard deaac53109757585ec177a7308fb5f569595d9ed
+7101| 8:M 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is now a replica of node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed
+7101| 8:M 09 Nov 2026 03:58:27.333 * Cluster state changed: ok
+7101| 8:M 09 Nov 2026 03:58:32.358 * Starting BGSAVE for SYNC with target: replicas sockets using: normal sync
+7101| 8:M 09 Nov 2026 03:58:32.359 * Background RDB transfer started by pid 18 to pipe through parent process
+7101| 18:C 09 Nov 2026 03:58:32.360 * Fork CoW for RDB: current 0 MB, peak 0 MB, average 0 MB
+7101| 8:M 09 Nov 2026 03:58:32.360 * Diskless rdb transfer, done reading from pipe, 1 replicas still up.
+7101| 8:M 09 Nov 2026 03:58:32.460 * Background RDB transfer terminated with success
+7101| 8:M 09 Nov 2026 03:58:32.460 * Streamed RDB transfer with replica 127.0.0.1:7104 succeeded (socket). Waiting for REPLCONF ACK from replica to enable streaming
+7101| 8:M 09 Nov 2026 03:58:32.460 * Synchronization with replica 127.0.0.1:7104 succeeded
+7101| 8:M 09 Nov 2026 03:58:39.004 * Slot migration initiated through CLUSTER MIGRATESLOTS command: {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} (user request from 'id=66 addr=127.0.0.1:58784 laddr=127.0.0.1:7101 fd=25 name=*redacted* user=*redacted* lib-name= lib-ver=')
+7101| 8:M 09 Nov 2026 03:58:39.004 * Connecting slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} (ip: 127.0.0.1, port 7103)
+7101| 8:M 09 Nov 2026 03:58:39.004 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} connection established.
+7101| 8:M 09 Nov 2026 03:58:39.004 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} state transition: connecting -> sending-establish-command
+7101| 8:M 09 Nov 2026 03:58:39.004 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} state transition: sending-establish-command -> reading-establish-response
+7101| 8:M 09 Nov 2026 03:58:39.005 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} state transition: reading-establish-response -> waiting-to-snapshot
+7101| 8:M 09 Nov 2026 03:58:39.084 * Beginning snapshot of slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199}.
+7101| 8:M 09 Nov 2026 03:58:39.085 * Started child process 19 for slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199}
+7101| 8:M 09 Nov 2026 03:58:39.085 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} state transition: waiting-to-snapshot -> snapshotting
+7101| 19:C 09 Nov 2026 03:58:39.091 * Fork CoW for Slot migration: current 0 MB, peak 0 MB, average 0 MB
+7101| 8:M 09 Nov 2026 03:58:39.092 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} state transition: snapshotting -> replicating
+7101| 8:M 09 Nov 2026 03:58:39.092 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} snapshot finished, starting streaming.
+7101| 8:M 09 Nov 2026 03:58:39.092 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} state transition: replicating -> waiting-to-pause
+7101| 8:M 09 Nov 2026 03:58:39.186 * Background SLOT MIGRATION transfer terminated with success
+7101| 8:M 09 Nov 2026 03:58:39.186 * Pausing writes (remaining_repl_size is 0) to allow slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} to finalize failover.
+7101| 8:M 09 Nov 2026 03:58:39.186 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} state transition: waiting-to-pause -> failover-paused
+7101| 8:M 09 Nov 2026 03:58:39.231 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} state transition: failover-paused -> failover-granted
+7101| 8:M 09 Nov 2026 03:58:39.231 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} connection lost
+7101| 8:M 09 Nov 2026 03:58:39.238 * Mismatch in topology information for sender node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed
+7101| 8:M 09 Nov 2026 03:58:39.239 * Slot range [0, 199] is migrated from node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30 to node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed.
+7101| 8:M 09 Nov 2026 03:58:39.239 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} slots are now owned by target node.
+7101| 8:M 09 Nov 2026 03:58:39.239 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} state transition: failover-granted -> success
+7101| 8:M 09 Nov 2026 03:58:39.239 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: export, target_node_id: fa8c5d0892c5c0adb5d4673522aab63f70eb86d9, slots: 0-199} finished. State: success, Message: 
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 1 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 2 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 3 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 4 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 5 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 6 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 7 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 8 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 9 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 10 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 11 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 12 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 13 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 14 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 15 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 16 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 17 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 18 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 19 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 20 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 22 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 23 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 24 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 25 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 26 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 27 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 28 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 29 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 30 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 31 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 32 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 33 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 34 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 35 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 36 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 37 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 38 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 40 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 41 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 42 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 43 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 44 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 45 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 46 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 47 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 48 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 49 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 50 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 51 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 52 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 53 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 54 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 55 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 56 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 57 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 58 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 59 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 60 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 61 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 62 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.239 * Deleting keys in dirty slot 63 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 64 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 65 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 66 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 67 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 68 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 69 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 70 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 71 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 72 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 73 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 74 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 75 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 76 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 77 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 78 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 79 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 80 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 81 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 82 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 83 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 84 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 85 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 86 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 87 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 88 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 89 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 90 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 91 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 92 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 93 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 94 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 95 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 96 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 97 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 98 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 99 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 100 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 101 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 102 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 103 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 104 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 105 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 106 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 107 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 108 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 109 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 110 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 111 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 112 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 113 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 114 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 115 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 116 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 117 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 118 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 119 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 120 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 121 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 122 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 123 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 124 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 125 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 126 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 127 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 128 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 129 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 130 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 131 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 132 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 133 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 134 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 135 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 136 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 137 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 138 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 139 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 140 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 141 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 142 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 143 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 144 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 145 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 146 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 147 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 148 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 149 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 150 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 152 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 153 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 154 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 155 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 156 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 157 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 158 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 159 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 160 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 161 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 162 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 163 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 164 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 165 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 166 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 167 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 168 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 169 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.240 * Deleting keys in dirty slot 170 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 171 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 172 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 173 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 174 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 175 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 176 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 177 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 178 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 179 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 180 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 181 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 182 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 183 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 184 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 185 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 186 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 187 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 188 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 189 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 190 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 191 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 192 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 193 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 194 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 195 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 196 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 197 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 198 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7101| 8:M 09 Nov 2026 03:58:39.241 * Deleting keys in dirty slot 199 on node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7102| 7:M 09 Nov 2026 03:58:25.519 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7102| 7:M 09 Nov 2026 03:58:25.519 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7102| 7:M 09 Nov 2026 03:58:25.519 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=7, just started
+7102| 7:M 09 Nov 2026 03:58:25.519 * Configuration loaded
+7102| 7:M 09 Nov 2026 03:58:25.519 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7102| 7:M 09 Nov 2026 03:58:25.519 * monotonic clock: POSIX clock_gettime
+7102| 7:M 09 Nov 2026 03:58:25.520 * Running mode=cluster, port=7102.
+7102| 7:M 09 Nov 2026 03:58:25.520 * No cluster configuration found, I'm 093a43097d5c9dba770f3f544c7b0f6bf266644e
+7102| 7:M 09 Nov 2026 03:58:25.526 * Server initialized
+7102| 7:M 09 Nov 2026 03:58:25.526 * Ready to accept connections tcp
+7102| 7:M 09 Nov 2026 03:58:26.102 * configEpoch set to 2 via CLUSTER SET-CONFIG-EPOCH
+7102| 7:M 09 Nov 2026 03:58:26.107 * Cluster meet 127.0.0.1:7101 (user request from 'id=4 addr=127.0.0.1:33932 laddr=127.0.0.1:7102 fd=11 name=*redacted* user=*redacted* lib-name= lib-ver=').
+7102| 7:M 09 Nov 2026 03:58:26.227 * Successfully completed handshake with 3885ce7b8015104465ae2ec9009b6b5fdfd88655 ()
+7102| 7:M 09 Nov 2026 03:58:26.227 * Mismatch in topology information for sender node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 35b83c72fb240d44094a1381a42da1f90829b16c
+7102| 7:M 09 Nov 2026 03:58:26.838 * Mismatch in topology information for sender node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard c00187e4ee9b6bf5086c47f29576daf421fb05bb
+7102| 7:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is no longer primary of shard 4c31de42b51d4a610a20b1da1856362ddc8d0361; removed all 0 slot(s) it used to own
+7102| 7:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is now part of shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7102| 7:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is now a replica of node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7102| 7:M 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is no longer primary of shard 9bb7f88620debcab52c0ad83b76f4a35a154b52c; removed all 0 slot(s) it used to own
+7102| 7:M 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is now part of shard f9714020123f942e3f099dadb969c231ab83ccfc
+7102| 7:M 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is now a replica of node 093a43097d5c9dba770f3f544c7b0f6bf266644e () in shard f9714020123f942e3f099dadb969c231ab83ccfc
+7102| 7:M 09 Nov 2026 03:58:27.124 * Replica 127.0.0.1:7105 asks for synchronization
+7102| 7:M 09 Nov 2026 03:58:27.124 * Full resync requested by replica 127.0.0.1:7105
+7102| 7:M 09 Nov 2026 03:58:27.124 * Replication backlog created, my new replication IDs are 'e4d65cdd95401cd594e167c4afbdb016e4bee817' and '0000000000000000000000000000000000000000'
+7102| 7:M 09 Nov 2026 03:58:27.124 * Delay next BGSAVE for diskless SYNC
+7102| 7:M 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is no longer primary of shard 5fd577da4db262c5792abfc5534d38ecb5da7e01; removed all 0 slot(s) it used to own
+7102| 7:M 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is now part of shard deaac53109757585ec177a7308fb5f569595d9ed
+7102| 7:M 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is now a replica of node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed
+7102| 7:M 09 Nov 2026 03:58:27.542 * Cluster state changed: ok
+7102| 7:M 09 Nov 2026 03:58:32.574 * Starting BGSAVE for SYNC with target: replicas sockets using: normal sync
+7102| 7:M 09 Nov 2026 03:58:32.575 * Background RDB transfer started by pid 17 to pipe through parent process
+7102| 17:C 09 Nov 2026 03:58:32.577 * Fork CoW for RDB: current 0 MB, peak 0 MB, average 0 MB
+7102| 7:M 09 Nov 2026 03:58:32.577 * Diskless rdb transfer, done reading from pipe, 1 replicas still up.
+7102| 7:M 09 Nov 2026 03:58:32.676 * Background RDB transfer terminated with success
+7102| 7:M 09 Nov 2026 03:58:32.676 * Streamed RDB transfer with replica 127.0.0.1:7105 succeeded (socket). Waiting for REPLCONF ACK from replica to enable streaming
+7102| 7:M 09 Nov 2026 03:58:32.676 * Synchronization with replica 127.0.0.1:7105 succeeded
+7102| 7:M 09 Nov 2026 03:58:39.238 * Mismatch in topology information for sender node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed
+7102| 7:M 09 Nov 2026 03:58:39.238 * Slot range [0, 199] is migrated from node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30 to node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed.
+7103| 7:M 09 Nov 2026 03:58:25.740 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7103| 7:M 09 Nov 2026 03:58:25.740 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7103| 7:M 09 Nov 2026 03:58:25.740 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=7, just started
+7103| 7:M 09 Nov 2026 03:58:25.740 * Configuration loaded
+7103| 7:M 09 Nov 2026 03:58:25.740 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7103| 7:M 09 Nov 2026 03:58:25.740 * monotonic clock: POSIX clock_gettime
+7103| 7:M 09 Nov 2026 03:58:25.741 * Running mode=cluster, port=7103.
+7103| 7:M 09 Nov 2026 03:58:25.741 * No cluster configuration found, I'm fa8c5d0892c5c0adb5d4673522aab63f70eb86d9
+7103| 7:M 09 Nov 2026 03:58:25.749 * Server initialized
+7103| 7:M 09 Nov 2026 03:58:25.749 * Ready to accept connections tcp
+7103| 7:M 09 Nov 2026 03:58:26.103 * configEpoch set to 3 via CLUSTER SET-CONFIG-EPOCH
+7103| 7:M 09 Nov 2026 03:58:26.107 * Cluster meet 127.0.0.1:7101 (user request from 'id=4 addr=127.0.0.1:45450 laddr=127.0.0.1:7103 fd=11 name=*redacted* user=*redacted* lib-name= lib-ver=').
+7103| 7:M 09 Nov 2026 03:58:26.227 * Successfully completed handshake with 3885ce7b8015104465ae2ec9009b6b5fdfd88655 ()
+7103| 7:M 09 Nov 2026 03:58:26.227 * Mismatch in topology information for sender node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9688d7a73929ae73cd68f73cdb9873dcc9df3a40
+7103| 7:M 09 Nov 2026 03:58:26.757 * Mismatch in topology information for sender node 093a43097d5c9dba770f3f544c7b0f6bf266644e () in shard b326db55b26c7095f6b5e577c538a5fb22f4833f
+7103| 7:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is no longer primary of shard 4c31de42b51d4a610a20b1da1856362ddc8d0361; removed all 0 slot(s) it used to own
+7103| 7:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is now part of shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7103| 7:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is now a replica of node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7103| 7:M 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is no longer primary of shard 9bb7f88620debcab52c0ad83b76f4a35a154b52c; removed all 0 slot(s) it used to own
+7103| 7:M 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is now part of shard f9714020123f942e3f099dadb969c231ab83ccfc
+7103| 7:M 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is now a replica of node 093a43097d5c9dba770f3f544c7b0f6bf266644e () in shard f9714020123f942e3f099dadb969c231ab83ccfc
+7103| 7:M 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is no longer primary of shard 5fd577da4db262c5792abfc5534d38ecb5da7e01; removed all 0 slot(s) it used to own
+7103| 7:M 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is now part of shard deaac53109757585ec177a7308fb5f569595d9ed
+7103| 7:M 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is now a replica of node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed
+7103| 7:M 09 Nov 2026 03:58:27.134 * Replica 127.0.0.1:7106 asks for synchronization
+7103| 7:M 09 Nov 2026 03:58:27.134 * Full resync requested by replica 127.0.0.1:7106
+7103| 7:M 09 Nov 2026 03:58:27.134 * Replication backlog created, my new replication IDs are 'ec27995cc11120b1233ac8c149fc4191409b6e37' and '0000000000000000000000000000000000000000'
+7103| 7:M 09 Nov 2026 03:58:27.134 * Delay next BGSAVE for diskless SYNC
+7103| 7:M 09 Nov 2026 03:58:27.762 * Cluster state changed: ok
+7103| 7:M 09 Nov 2026 03:58:32.790 * Starting BGSAVE for SYNC with target: replicas sockets using: normal sync
+7103| 7:M 09 Nov 2026 03:58:32.791 * Background RDB transfer started by pid 17 to pipe through parent process
+7103| 17:C 09 Nov 2026 03:58:32.792 * Fork CoW for RDB: current 0 MB, peak 0 MB, average 0 MB
+7103| 7:M 09 Nov 2026 03:58:32.792 * Diskless rdb transfer, done reading from pipe, 1 replicas still up.
+7103| 7:M 09 Nov 2026 03:58:32.892 * Background RDB transfer terminated with success
+7103| 7:M 09 Nov 2026 03:58:32.892 * Streamed RDB transfer with replica 127.0.0.1:7106 succeeded (socket). Waiting for REPLCONF ACK from replica to enable streaming
+7103| 7:M 09 Nov 2026 03:58:32.892 * Synchronization with replica 127.0.0.1:7106 succeeded
+7103| 7:M 09 Nov 2026 03:58:39.005 * New slot import job created: {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: 3885ce7b8015104465ae2ec9009b6b5fdfd88655, slots: 0-199}.
+7103| 7:M 09 Nov 2026 03:58:39.005 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: 3885ce7b8015104465ae2ec9009b6b5fdfd88655, slots: 0-199} state transition: waiting-for-ack -> receiving-snapshot
+7103| 7:M 09 Nov 2026 03:58:39.092 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: 3885ce7b8015104465ae2ec9009b6b5fdfd88655, slots: 0-199} successfully received slot snapshot. Beginning incremental stream...
+7103| 7:M 09 Nov 2026 03:58:39.092 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: 3885ce7b8015104465ae2ec9009b6b5fdfd88655, slots: 0-199} state transition: receiving-snapshot -> waiting-for-paused
+7103| 7:M 09 Nov 2026 03:58:39.231 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: 3885ce7b8015104465ae2ec9009b6b5fdfd88655, slots: 0-199} state transition: waiting-for-paused -> failover-requested
+7103| 7:M 09 Nov 2026 03:58:39.231 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: 3885ce7b8015104465ae2ec9009b6b5fdfd88655, slots: 0-199} state transition: failover-requested -> failover-granted
+7103| 7:M 09 Nov 2026 03:58:39.231 * New configEpoch set to 7
+7103| 7:M 09 Nov 2026 03:58:39.231 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: 3885ce7b8015104465ae2ec9009b6b5fdfd88655, slots: 0-199} completed successfully. This node is now the owner of the slots
+7103| 7:M 09 Nov 2026 03:58:39.231 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: 3885ce7b8015104465ae2ec9009b6b5fdfd88655, slots: 0-199} state transition: failover-granted -> success
+7103| 7:M 09 Nov 2026 03:58:39.231 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: 3885ce7b8015104465ae2ec9009b6b5fdfd88655, slots: 0-199} finished. State: success, Message: 
+7104| 7:M 09 Nov 2026 03:58:24.709 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7104| 7:M 09 Nov 2026 03:58:24.709 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7104| 7:M 09 Nov 2026 03:58:24.710 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=7, just started
+7104| 7:M 09 Nov 2026 03:58:24.710 * Configuration loaded
+7104| 7:M 09 Nov 2026 03:58:24.710 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7104| 7:M 09 Nov 2026 03:58:24.710 * monotonic clock: POSIX clock_gettime
+7104| 7:M 09 Nov 2026 03:58:24.710 * Running mode=cluster, port=7104.
+7104| 7:M 09 Nov 2026 03:58:24.711 * No cluster configuration found, I'm c59f544407e22ef6857e8572b6b6583da01275bf
+7104| 7:M 09 Nov 2026 03:58:24.716 * Server initialized
+7104| 7:M 09 Nov 2026 03:58:24.716 * Ready to accept connections tcp
+7104| 7:M 09 Nov 2026 03:58:26.104 * configEpoch set to 4 via CLUSTER SET-CONFIG-EPOCH
+7104| 7:M 09 Nov 2026 03:58:26.107 * Cluster meet 127.0.0.1:7101 (user request from 'id=4 addr=127.0.0.1:33668 laddr=127.0.0.1:7104 fd=11 name=*redacted* user=*redacted* lib-name= lib-ver=').
+7104| 7:M 09 Nov 2026 03:58:26.126 * Successfully completed handshake with 3885ce7b8015104465ae2ec9009b6b5fdfd88655 ()
+7104| 7:M 09 Nov 2026 03:58:26.126 * Mismatch in topology information for sender node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 37ebbcbdce0887cd8d256cecfc76ac1f68fb7721
+7104| 7:M 09 Nov 2026 03:58:26.728 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
+7104| 7:M 09 Nov 2026 03:58:26.733 * Mismatch in topology information for sender node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard 8470645bdf21d2a5c3a4ff8296401cbf762154e5
+7104| 7:M 09 Nov 2026 03:58:26.830 * Mismatch in topology information for sender node 093a43097d5c9dba770f3f544c7b0f6bf266644e () in shard ea0e90828adfcc3cec110682fe1f2030d0fa302b
+7104| 7:M 09 Nov 2026 03:58:26.830 * Cluster state changed: ok
+7104| 7:S 09 Nov 2026 03:58:27.111 * Connecting to PRIMARY 127.0.0.1:7101
+7104| 7:S 09 Nov 2026 03:58:27.111 * PRIMARY <-> REPLICA sync started
+7104| 7:S 09 Nov 2026 03:58:27.112 * Non blocking connect for SYNC fired the event.
+7104| 7:S 09 Nov 2026 03:58:27.113 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is no longer primary of shard 9bb7f88620debcab52c0ad83b76f4a35a154b52c; removed all 0 slot(s) it used to own
+7104| 7:S 09 Nov 2026 03:58:27.113 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is now part of shard f9714020123f942e3f099dadb969c231ab83ccfc
+7104| 7:S 09 Nov 2026 03:58:27.113 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is now a replica of node 093a43097d5c9dba770f3f544c7b0f6bf266644e () in shard f9714020123f942e3f099dadb969c231ab83ccfc
+7104| 7:S 09 Nov 2026 03:58:27.119 * Primary replied to PING, replication can continue...
+7104| 7:S 09 Nov 2026 03:58:27.126 * Partial resynchronization not possible (no cached primary)
+7104| 7:S 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is no longer primary of shard 5fd577da4db262c5792abfc5534d38ecb5da7e01; removed all 0 slot(s) it used to own
+7104| 7:S 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is now part of shard deaac53109757585ec177a7308fb5f569595d9ed
+7104| 7:S 09 Nov 2026 03:58:27.126 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is now a replica of node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed
+7104| 7:S 09 Nov 2026 03:58:32.358 * Full resync from primary: a3b9ed275876c719f91cdde8abceb33c07b4d565:0
+7104| 7:S 09 Nov 2026 03:58:32.360 * Replica main thread creating Bio thread to save RDB to disk
+7104| 7:S 09 Nov 2026 03:58:32.360 * Replica bio thread: PRIMARY <-> REPLICA sync: receiving streamed RDB from primary with EOF to disk
+7104| 7:S 09 Nov 2026 03:58:32.360 * Replica bio thread: Done downloading RDB
+7104| 7:S 09 Nov 2026 03:58:32.765 * Replica main thread detected RDB download completion in Bio thread
+7104| 7:S 09 Nov 2026 03:58:32.765 * Loading the RDB and finalizing primary-replica sync...
+7104| 7:S 09 Nov 2026 03:58:32.770 * PRIMARY <-> REPLICA sync: Flushing old data
+7104| 7:S 09 Nov 2026 03:58:32.771 * PRIMARY <-> REPLICA sync: Loading DB in memory
+7104| 7:S 09 Nov 2026 03:58:32.771 * Cleaning slot migration log in anticipation of a load operation.
+7104| 7:S 09 Nov 2026 03:58:32.771 * Loading RDB produced by Valkey version 9.0.6
+7104| 7:S 09 Nov 2026 03:58:32.771 * RDB age 0 seconds
+7104| 7:S 09 Nov 2026 03:58:32.771 * RDB memory usage when created 2.81 Mb
+7104| 7:S 09 Nov 2026 03:58:32.771 * Done loading RDB, keys loaded: 0, keys expired: 0.
+7104| 7:S 09 Nov 2026 03:58:32.771 * PRIMARY <-> REPLICA sync: Finished with success
+7104| 7:S 09 Nov 2026 03:58:39.238 * Mismatch in topology information for sender node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed
+7104| 7:S 09 Nov 2026 03:58:39.239 * Slot range [0, 199] is migrated from node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30 to node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed.
+7105| 7:M 09 Nov 2026 03:58:25.117 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7105| 7:M 09 Nov 2026 03:58:25.117 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7105| 7:M 09 Nov 2026 03:58:25.117 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=7, just started
+7105| 7:M 09 Nov 2026 03:58:25.117 * Configuration loaded
+7105| 7:M 09 Nov 2026 03:58:25.118 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7105| 7:M 09 Nov 2026 03:58:25.118 * monotonic clock: POSIX clock_gettime
+7105| 7:M 09 Nov 2026 03:58:25.118 * Running mode=cluster, port=7105.
+7105| 7:M 09 Nov 2026 03:58:25.119 * No cluster configuration found, I'm de42acd0ea4fb27e2695b7a09ad49136cf529259
+7105| 7:M 09 Nov 2026 03:58:25.125 * Server initialized
+7105| 7:M 09 Nov 2026 03:58:25.126 * Ready to accept connections tcp
+7105| 7:M 09 Nov 2026 03:58:26.105 * configEpoch set to 5 via CLUSTER SET-CONFIG-EPOCH
+7105| 7:M 09 Nov 2026 03:58:26.108 * Cluster meet 127.0.0.1:7101 (user request from 'id=4 addr=127.0.0.1:59936 laddr=127.0.0.1:7105 fd=11 name=*redacted* user=*redacted* lib-name= lib-ver=').
+7105| 7:M 09 Nov 2026 03:58:26.227 * Successfully completed handshake with 3885ce7b8015104465ae2ec9009b6b5fdfd88655 ()
+7105| 7:M 09 Nov 2026 03:58:26.227 * Mismatch in topology information for sender node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 321a57e6b2e3857aa233db2d144869eba826cda0
+7105| 7:M 09 Nov 2026 03:58:26.741 * Mismatch in topology information for sender node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard 5a3f459c98c3a3b1e9eaec1e2c4b05b54729ff64
+7105| 7:M 09 Nov 2026 03:58:26.836 * Mismatch in topology information for sender node 093a43097d5c9dba770f3f544c7b0f6bf266644e () in shard c0bad4aa24b88e63eba54a5717658f9796229798
+7105| 7:S 09 Nov 2026 03:58:27.112 * Connecting to PRIMARY 127.0.0.1:7102
+7105| 7:S 09 Nov 2026 03:58:27.112 * PRIMARY <-> REPLICA sync started
+7105| 7:S 09 Nov 2026 03:58:27.112 * Cluster state changed: ok
+7105| 7:S 09 Nov 2026 03:58:27.113 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is no longer primary of shard 4c31de42b51d4a610a20b1da1856362ddc8d0361; removed all 0 slot(s) it used to own
+7105| 7:S 09 Nov 2026 03:58:27.113 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is now part of shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7105| 7:S 09 Nov 2026 03:58:27.113 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is now a replica of node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7105| 7:S 09 Nov 2026 03:58:27.113 * Non blocking connect for SYNC fired the event.
+7105| 7:S 09 Nov 2026 03:58:27.124 * Primary replied to PING, replication can continue...
+7105| 7:S 09 Nov 2026 03:58:27.124 * Partial resynchronization not possible (no cached primary)
+7105| 7:S 09 Nov 2026 03:58:27.127 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is no longer primary of shard 5fd577da4db262c5792abfc5534d38ecb5da7e01; removed all 0 slot(s) it used to own
+7105| 7:S 09 Nov 2026 03:58:27.127 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is now part of shard deaac53109757585ec177a7308fb5f569595d9ed
+7105| 7:S 09 Nov 2026 03:58:27.127 * Node afe703b7549daea262fc590c96f3f398f64c1192 () is now a replica of node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed
+7105| 7:S 09 Nov 2026 03:58:32.575 * Full resync from primary: e4d65cdd95401cd594e167c4afbdb016e4bee817:0
+7105| 7:S 09 Nov 2026 03:58:32.576 * Replica main thread creating Bio thread to save RDB to disk
+7105| 7:S 09 Nov 2026 03:58:32.576 * Replica bio thread: PRIMARY <-> REPLICA sync: receiving streamed RDB from primary with EOF to disk
+7105| 7:S 09 Nov 2026 03:58:32.576 * Replica bio thread: Done downloading RDB
+7105| 7:S 09 Nov 2026 03:58:33.176 * Replica main thread detected RDB download completion in Bio thread
+7105| 7:S 09 Nov 2026 03:58:33.176 * Loading the RDB and finalizing primary-replica sync...
+7105| 7:S 09 Nov 2026 03:58:33.182 * PRIMARY <-> REPLICA sync: Flushing old data
+7105| 7:S 09 Nov 2026 03:58:33.183 * PRIMARY <-> REPLICA sync: Loading DB in memory
+7105| 7:S 09 Nov 2026 03:58:33.183 * Cleaning slot migration log in anticipation of a load operation.
+7105| 7:S 09 Nov 2026 03:58:33.183 * Loading RDB produced by Valkey version 9.0.6
+7105| 7:S 09 Nov 2026 03:58:33.183 * RDB age 1 seconds
+7105| 7:S 09 Nov 2026 03:58:33.183 * RDB memory usage when created 2.83 Mb
+7105| 7:S 09 Nov 2026 03:58:33.183 * Done loading RDB, keys loaded: 0, keys expired: 0.
+7105| 7:S 09 Nov 2026 03:58:33.183 * PRIMARY <-> REPLICA sync: Finished with success
+7105| 7:S 09 Nov 2026 03:58:39.238 * Mismatch in topology information for sender node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed
+7105| 7:S 09 Nov 2026 03:58:39.239 * Slot range [0, 199] is migrated from node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30 to node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed.
+7106| 7:M 09 Nov 2026 03:58:24.909 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+7106| 7:M 09 Nov 2026 03:58:24.909 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+7106| 7:M 09 Nov 2026 03:58:24.909 * Valkey version=9.0.6, bits=64, commit=00000000, modified=0, pid=7, just started
+7106| 7:M 09 Nov 2026 03:58:24.909 * Configuration loaded
+7106| 7:M 09 Nov 2026 03:58:24.910 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+7106| 7:M 09 Nov 2026 03:58:24.910 * monotonic clock: POSIX clock_gettime
+7106| 7:M 09 Nov 2026 03:58:24.910 * Running mode=cluster, port=7106.
+7106| 7:M 09 Nov 2026 03:58:24.911 * No cluster configuration found, I'm afe703b7549daea262fc590c96f3f398f64c1192
+7106| 7:M 09 Nov 2026 03:58:24.918 * Server initialized
+7106| 7:M 09 Nov 2026 03:58:24.918 * Ready to accept connections tcp
+7106| 7:M 09 Nov 2026 03:58:26.106 * configEpoch set to 6 via CLUSTER SET-CONFIG-EPOCH
+7106| 7:M 09 Nov 2026 03:58:26.108 * Cluster meet 127.0.0.1:7101 (user request from 'id=4 addr=127.0.0.1:55090 laddr=127.0.0.1:7106 fd=11 name=*redacted* user=*redacted* lib-name= lib-ver=').
+7106| 7:M 09 Nov 2026 03:58:26.227 * Successfully completed handshake with 3885ce7b8015104465ae2ec9009b6b5fdfd88655 ()
+7106| 7:M 09 Nov 2026 03:58:26.227 * Mismatch in topology information for sender node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 0cc1ba127a1961536e38ed24c79a5de0e1c101ac
+7106| 7:M 09 Nov 2026 03:58:26.931 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
+7106| 7:M 09 Nov 2026 03:58:26.932 * Mismatch in topology information for sender node 093a43097d5c9dba770f3f544c7b0f6bf266644e () in shard 80990374ace205556eb79a12a8d25b23d68fe564
+7106| 7:M 09 Nov 2026 03:58:27.033 * Mismatch in topology information for sender node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard 9e7850d34441642fdfc57bc8091e035ee38d5e66
+7106| 7:M 09 Nov 2026 03:58:27.033 * Cluster state changed: ok
+7106| 7:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is no longer primary of shard 4c31de42b51d4a610a20b1da1856362ddc8d0361; removed all 0 slot(s) it used to own
+7106| 7:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is now part of shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7106| 7:M 09 Nov 2026 03:58:27.112 * Node c59f544407e22ef6857e8572b6b6583da01275bf () is now a replica of node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30
+7106| 7:S 09 Nov 2026 03:58:27.118 * Connecting to PRIMARY 127.0.0.1:7103
+7106| 7:S 09 Nov 2026 03:58:27.118 * PRIMARY <-> REPLICA sync started
+7106| 7:S 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is no longer primary of shard 9bb7f88620debcab52c0ad83b76f4a35a154b52c; removed all 0 slot(s) it used to own
+7106| 7:S 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is now part of shard f9714020123f942e3f099dadb969c231ab83ccfc
+7106| 7:S 09 Nov 2026 03:58:27.118 * Node de42acd0ea4fb27e2695b7a09ad49136cf529259 () is now a replica of node 093a43097d5c9dba770f3f544c7b0f6bf266644e () in shard f9714020123f942e3f099dadb969c231ab83ccfc
+7106| 7:S 09 Nov 2026 03:58:27.126 * Non blocking connect for SYNC fired the event.
+7106| 7:S 09 Nov 2026 03:58:27.126 * Primary replied to PING, replication can continue...
+7106| 7:S 09 Nov 2026 03:58:27.134 * Partial resynchronization not possible (no cached primary)
+7106| 7:S 09 Nov 2026 03:58:32.790 * Full resync from primary: ec27995cc11120b1233ac8c149fc4191409b6e37:0
+7106| 7:S 09 Nov 2026 03:58:32.791 * Replica main thread creating Bio thread to save RDB to disk
+7106| 7:S 09 Nov 2026 03:58:32.792 * Replica bio thread: PRIMARY <-> REPLICA sync: receiving streamed RDB from primary with EOF to disk
+7106| 7:S 09 Nov 2026 03:58:32.792 * Replica bio thread: Done downloading RDB
+7106| 7:S 09 Nov 2026 03:58:32.964 * Replica main thread detected RDB download completion in Bio thread
+7106| 7:S 09 Nov 2026 03:58:32.964 * Loading the RDB and finalizing primary-replica sync...
+7106| 7:S 09 Nov 2026 03:58:32.969 * PRIMARY <-> REPLICA sync: Flushing old data
+7106| 7:S 09 Nov 2026 03:58:32.969 * PRIMARY <-> REPLICA sync: Loading DB in memory
+7106| 7:S 09 Nov 2026 03:58:32.969 * Cleaning slot migration log in anticipation of a load operation.
+7106| 7:S 09 Nov 2026 03:58:32.969 * Loading RDB produced by Valkey version 9.0.6
+7106| 7:S 09 Nov 2026 03:58:32.969 * RDB age 0 seconds
+7106| 7:S 09 Nov 2026 03:58:32.969 * RDB memory usage when created 2.83 Mb
+7106| 7:S 09 Nov 2026 03:58:32.969 * Done loading RDB, keys loaded: 0, keys expired: 0.
+7106| 7:S 09 Nov 2026 03:58:32.970 * PRIMARY <-> REPLICA sync: Finished with success
+7106| 7:S 09 Nov 2026 03:58:39.005 * New slot import job created: {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: unknown, slots: 0-199}.
+7106| 7:S 09 Nov 2026 03:58:39.231 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: unknown, slots: 0-199} state transition: occurring-on-primary -> success
+7106| 7:S 09 Nov 2026 03:58:39.231 * Slot migration {name: 14532692e435ae73175d7433569a0f17162aafce, operation: import, source_node_id: unknown, slots: 0-199} finished. State: success, Message: 
+7106| 7:S 09 Nov 2026 03:58:39.238 * Mismatch in topology information for sender node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed
+7106| 7:S 09 Nov 2026 03:58:39.239 * Slot range [0, 199] is migrated from node 3885ce7b8015104465ae2ec9009b6b5fdfd88655 () in shard 9a2595b58538f6fef9c3e00c4d17aa0858861d30 to node fa8c5d0892c5c0adb5d4673522aab63f70eb86d9 () in shard deaac53109757585ec177a7308fb5f569595d9ed.

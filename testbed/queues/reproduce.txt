@@ -1,0 +1,65 @@
+# Reproduces the PR description: main against the PR with nothing set, the earlier fixed settings, MaxRefreshDelay
+# samples and the 1000-node emulation. Columns: scenario label round timeout(s) command. About 60 runs, 1 hour.
+smart-kill main 1 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill s8 1 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill main 2 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill s8 2 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill main 3 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill s8 3 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-hold3 main 1 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-hold3 s8 1 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-hold3 main 2 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-hold3 s8 2 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-lazy main 1 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s -shards-refresh 1s
+smart-lazy s8 1 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s -shards-refresh 1s
+smart-lazy main 2 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s -shards-refresh 1s
+smart-lazy s8 2 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s -shards-refresh 1s
+smart-elect5 main 1 170 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 20 -fail-hold 5 -duration 30s
+smart-elect5 s8 1 170 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 20 -fail-hold 5 -duration 30s
+smart-elect5 main 2 170 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 20 -fail-hold 5 -duration 30s
+smart-elect5 s8 2 170 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 20 -fail-hold 5 -duration 30s
+smart-planned main 1 150 bench-ar/bin/bench-m2 -fail-kind planned -duration 20s
+smart-planned s8 1 150 bench-ar/bin/bench-final8 -fail-kind planned -duration 20s
+smart-planned main 2 150 bench-ar/bin/bench-m2 -fail-kind planned -duration 20s
+smart-planned s8 2 150 bench-ar/bin/bench-final8 -fail-kind planned -duration 20s
+smart-pause main 1 150 bench-ar/bin/bench-m2 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause s8 1 150 bench-ar/bin/bench-final8 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause main 2 150 bench-ar/bin/bench-m2 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-pause s8 2 150 bench-ar/bin/bench-final8 -fail-mode pause -fail-seconds 12 -fail-hold 0 -duration 30s
+smart-migrate main 1 180 bench-ar/bin/bench-m2 -fail-kind migrate -migrate-slots 0-199 -key-slots 0-199 -after-migrate 10s -duration 60s -errorstats-poll 20ms
+smart-migrate s8 1 180 bench-ar/bin/bench-final8 -fail-kind migrate -migrate-slots 0-199 -key-slots 0-199 -after-migrate 10s -duration 60s -errorstats-poll 20ms
+smart-idle-kill main 1 180 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 30 -fail-hold 0 -fail-at 5s -idle-from 4s -idle-until 22s -duration 30s -shards-refresh 0s
+smart-idle-kill s8 1 180 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 30 -fail-hold 0 -fail-at 5s -idle-from 4s -idle-until 22s -duration 30s -shards-refresh 0s
+smart-pipe-kill main 1 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -pipeline 10
+smart-pipe-kill s8 1 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -pipeline 10
+smart-pipe-kill main 2 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -pipeline 10
+smart-pipe-kill s8 2 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -pipeline 10
+smart-fleet f_main 1 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -clients 20
+smart-fleet f_s8 1 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -clients 20
+smart-fleet f_main 2 150 bench-ar/bin/bench-m2 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -clients 20
+smart-fleet f_s8 2 150 bench-ar/bin/bench-final8 -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s -clients 20
+smart-kill f50 1 150 bench-ar/bin/bench-finalboth -max-refresh-delay 50ms -min-refresh 50ms -max-slot-wait 5s -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill f250 1 150 bench-ar/bin/bench-finalboth -max-refresh-delay 50ms -min-refresh 250ms -max-slot-wait 5s -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill f50 2 150 bench-ar/bin/bench-finalboth -max-refresh-delay 50ms -min-refresh 50ms -max-slot-wait 5s -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-kill f250 2 150 bench-ar/bin/bench-finalboth -max-refresh-delay 50ms -min-refresh 250ms -max-slot-wait 5s -fail-mode kill -fail-seconds 12 -fail-hold 0 -duration 25s
+smart-hold3 f50 1 150 bench-ar/bin/bench-finalboth -max-refresh-delay 50ms -min-refresh 50ms -max-slot-wait 5s -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-hold3 f250 1 150 bench-ar/bin/bench-finalboth -max-refresh-delay 50ms -min-refresh 250ms -max-slot-wait 5s -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 25s
+smart-planned f_s8d1s 1 150 bench-ar/bin/bench-final8 -max-refresh-delay 1s -fail-kind planned -duration 20s -clients 20
+smart-planned f_s8 1 150 bench-ar/bin/bench-final8 -fail-kind planned -duration 20s -clients 20
+smart-planned f_s8d50 1 150 bench-ar/bin/bench-final8 -max-refresh-delay 50ms -fail-kind planned -duration 20s -clients 20
+smart-big-lazy lmain 1 200 bench-ar/bin/bench-m2vd -max-refresh-delay 30s -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 50s -shards-refresh 1s
+smart-big-lazy b8 1 200 bench-ar/bin/bench-final8big -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 50s -shards-refresh 1s
+smart-big-kill lmain 1 200 bench-ar/bin/bench-m2vd -max-refresh-delay 30s -fail-mode kill -fail-seconds 30 -fail-hold 0 -duration 50s
+smart-big-kill b8 1 200 bench-ar/bin/bench-final8big -fail-mode kill -fail-seconds 30 -fail-hold 0 -duration 50s
+smart-big-pause b8 1 200 bench-ar/bin/bench-final8big -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-pause b8d1s 1 200 bench-ar/bin/bench-final8big -max-refresh-delay 1s -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-lazy lmain 2 200 bench-ar/bin/bench-m2vd -max-refresh-delay 30s -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 50s -shards-refresh 1s
+smart-big-lazy b8 2 200 bench-ar/bin/bench-final8big -fail-mode kill -fail-seconds 15 -fail-hold 3 -duration 50s -shards-refresh 1s
+smart-big-kill lmain 2 200 bench-ar/bin/bench-m2vd -max-refresh-delay 30s -fail-mode kill -fail-seconds 30 -fail-hold 0 -duration 50s
+smart-big-kill b8 2 200 bench-ar/bin/bench-final8big -fail-mode kill -fail-seconds 30 -fail-hold 0 -duration 50s
+smart-big-pause b8 2 200 bench-ar/bin/bench-final8big -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-pause b8d1s 2 200 bench-ar/bin/bench-final8big -max-refresh-delay 1s -fail-mode pause -fail-seconds 15 -fail-hold 0 -duration 50s
+smart-big-steady lmain 1 120 bench-ar/bin/bench-m2vd -max-refresh-delay 30s -shards-refresh 1s -no-fail -duration 20s
+smart-big-steady b8 1 120 bench-ar/bin/bench-final8big -shards-refresh 1s -no-fail -duration 20s
+steady main 1 120 bench-ar/bin/bench-m2 -no-fail -duration 20s
+steady s8 1 120 bench-ar/bin/bench-final8 -no-fail -duration 20s

@@ -1,0 +1,153 @@
+[03:58:50] removing containers and volumes
+ Container lf-haproxy Stopping 
+ Container lf-haproxy Stopped 
+ Container lf-haproxy Removing 
+ Container lf-haproxy Removed 
+ Container lf-valkey-7101 Stopping 
+ Container lf-valkey-7103 Stopping 
+ Container lf-valkey-7102 Stopping 
+ Container lf-valkey-7105 Stopping 
+ Container lf-valkey-7106 Stopping 
+ Container lf-valkey-7104 Stopping 
+ Container lf-valkey-7102 Stopped 
+ Container lf-valkey-7102 Removing 
+ Container lf-valkey-7103 Stopped 
+ Container lf-valkey-7103 Removing 
+ Container lf-valkey-7102 Removed 
+ Container lf-valkey-7104 Stopped 
+ Container lf-valkey-7104 Removing 
+ Container lf-valkey-7101 Stopped 
+ Container lf-valkey-7101 Removing 
+ Container lf-valkey-7103 Removed 
+ Container lf-valkey-7104 Removed 
+ Container lf-valkey-7106 Stopped 
+ Container lf-valkey-7106 Removing 
+ Container lf-valkey-7101 Removed 
+ Container lf-valkey-7105 Stopped 
+ Container lf-valkey-7105 Removing 
+ Container lf-valkey-7106 Removed 
+ Container lf-valkey-7105 Removed 
+ Volume local-failover_data-7101 Removing 
+ Volume local-failover_data-7102 Removing 
+ Volume local-failover_data-7104 Removing 
+ Volume local-failover_data-7106 Removing 
+ Volume local-failover_data-7105 Removing 
+ Volume local-failover_data-7103 Removing 
+ Volume local-failover_data-7101 Removed 
+ Volume local-failover_data-7102 Removed 
+ Volume local-failover_data-7106 Removed 
+ Volume local-failover_data-7104 Removed 
+ Volume local-failover_data-7105 Removed 
+ Volume local-failover_data-7103 Removed 
+[03:58:51] down
+[03:58:51] starting containers
+ Volume local-failover_data-7103 Creating 
+ Volume local-failover_data-7101 Creating 
+ Volume local-failover_data-7101 Creating 
+ Volume local-failover_data-7104 Creating 
+ Volume local-failover_data-7104 Creating 
+ Volume local-failover_data-7102 Creating 
+ Volume local-failover_data-7102 Creating 
+ Volume local-failover_data-7105 Creating 
+ Volume local-failover_data-7103 Creating 
+ Volume local-failover_data-7105 Creating 
+ Volume local-failover_data-7106 Creating 
+ Volume local-failover_data-7106 Creating 
+ Volume local-failover_data-7101 Created 
+ Volume local-failover_data-7101 Created 
+ Container lf-valkey-7101 Creating 
+ Volume local-failover_data-7103 Created 
+ Volume local-failover_data-7103 Created 
+ Container lf-valkey-7103 Creating 
+ Volume local-failover_data-7104 Created 
+ Volume local-failover_data-7104 Created 
+ Container lf-valkey-7104 Creating 
+ Volume local-failover_data-7105 Created 
+ Volume local-failover_data-7105 Created 
+ Container lf-valkey-7105 Creating 
+ Volume local-failover_data-7106 Created 
+ Volume local-failover_data-7106 Created 
+ Container lf-valkey-7106 Creating 
+ Volume local-failover_data-7102 Created 
+ Volume local-failover_data-7102 Created 
+ Container lf-valkey-7102 Creating 
+ Container lf-valkey-7102 Created 
+ Container lf-valkey-7103 Created 
+ Container lf-valkey-7105 Created 
+ Container lf-valkey-7106 Created 
+ Container lf-valkey-7104 Created 
+ Container lf-valkey-7101 Created 
+ Container lf-haproxy Creating 
+ Container lf-haproxy Created 
+ Container lf-valkey-7101 Starting 
+ Container lf-valkey-7103 Starting 
+ Container lf-valkey-7102 Starting 
+ Container lf-valkey-7106 Starting 
+ Container lf-valkey-7105 Starting 
+ Container lf-valkey-7104 Starting 
+ Container lf-valkey-7101 Started 
+ Container lf-valkey-7103 Started 
+ Container lf-valkey-7102 Started 
+ Container lf-valkey-7106 Started 
+ Container lf-valkey-7105 Started 
+ Container lf-valkey-7104 Started 
+ Container lf-haproxy Starting 
+ Container lf-haproxy Started 
+[03:58:54] creating the cluster
+>>> Performing hash slots allocation on 6 nodes...
+Master[0] -> Slots 0 - 5460
+Master[1] -> Slots 5461 - 10922
+Master[2] -> Slots 10923 - 16383
+Adding replica 127.0.0.1:7105 to 127.0.0.1:7101
+Adding replica 127.0.0.1:7106 to 127.0.0.1:7102
+Adding replica 127.0.0.1:7104 to 127.0.0.1:7103
+>>> Trying to optimize slaves allocation for anti-affinity
+[WARNING] Some slaves are in the same host as their master
+M: 9f681c483467eacdf6eac1248dff6b85fa9f6cb4 127.0.0.1:7101
+   slots:[0-5460] (5461 slots) master
+M: c2913ae9b925c6e282fa249a8b8d27bbdf8a368a 127.0.0.1:7102
+   slots:[5461-10922] (5462 slots) master
+M: 8f031ecb2feac60207a4ab09eff9dbb7094ba0a4 127.0.0.1:7103
+   slots:[10923-16383] (5461 slots) master
+S: 969be8faa339c6dd0fb050992573f6c816a5c8d0 127.0.0.1:7104
+   replicates c2913ae9b925c6e282fa249a8b8d27bbdf8a368a
+S: fb4ba226b22ab1595468a01b6c76681dc7bf6c7f 127.0.0.1:7105
+   replicates 8f031ecb2feac60207a4ab09eff9dbb7094ba0a4
+S: bf30b1e84081caa1bcd075f82d3ecd6a0890eba1 127.0.0.1:7106
+   replicates 9f681c483467eacdf6eac1248dff6b85fa9f6cb4
+>>> Nodes configuration updated
+>>> Assign a different config epoch to each node
+>>> Sending CLUSTER MEET messages to join the cluster
+Waiting for the cluster to join
+...
+>>> Performing Cluster Check (using node 127.0.0.1:7101)
+M: 9f681c483467eacdf6eac1248dff6b85fa9f6cb4 127.0.0.1:7101
+   slots:[0-5460] (5461 slots) master
+   1 additional replica(s)
+M: 8f031ecb2feac60207a4ab09eff9dbb7094ba0a4 127.0.0.1:7103
+   slots:[10923-16383] (5461 slots) master
+   1 additional replica(s)
+S: bf30b1e84081caa1bcd075f82d3ecd6a0890eba1 127.0.0.1:7106
+   slots: (0 slots) slave
+   replicates 9f681c483467eacdf6eac1248dff6b85fa9f6cb4
+M: c2913ae9b925c6e282fa249a8b8d27bbdf8a368a 127.0.0.1:7102
+   slots:[5461-10922] (5462 slots) master
+   1 additional replica(s)
+S: fb4ba226b22ab1595468a01b6c76681dc7bf6c7f 127.0.0.1:7105
+   slots: (0 slots) slave
+   replicates 8f031ecb2feac60207a4ab09eff9dbb7094ba0a4
+S: 969be8faa339c6dd0fb050992573f6c816a5c8d0 127.0.0.1:7104
+   slots: (0 slots) slave
+   replicates c2913ae9b925c6e282fa249a8b8d27bbdf8a368a
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+[03:58:58] waiting for cluster_state:ok and replica sync
+[03:59:05] cluster healthy; discovery endpoint 127.0.0.1:16379
+  127.0.0.1:7101   myself,master          0-5460
+  127.0.0.1:7102   master                 5461-10922
+  127.0.0.1:7103   master                 10923-16383
+  127.0.0.1:7104   slave                 
+  127.0.0.1:7105   slave                 
+  127.0.0.1:7106   slave                 
