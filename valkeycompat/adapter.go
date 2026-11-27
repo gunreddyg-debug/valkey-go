@@ -133,6 +133,8 @@ type CoreCmdable interface {
 	SetFromBuffer(ctx context.Context, key string, buf []byte) *StatusCmd
 	SetEX(ctx context.Context, key string, value any, expiration time.Duration) *StatusCmd
 	SetNX(ctx context.Context, key string, value any, expiration time.Duration) *BoolCmd
+	SetIFEQ(ctx context.Context, key string, value any, matchValue any, expiration time.Duration) *StatusCmd
+	SetIFEQGet(ctx context.Context, key string, value any, matchValue any, expiration time.Duration) *StringCmd
 	SetXX(ctx context.Context, key string, value any, expiration time.Duration) *BoolCmd
 	SetRange(ctx context.Context, key string, offset int64, value string) *IntCmd
 	StrLen(ctx context.Context, key string) *IntCmd
@@ -264,6 +266,7 @@ type CoreCmdable interface {
 	XClaim(ctx context.Context, a XClaimArgs) *XMessageSliceCmd
 	XClaimJustID(ctx context.Context, a XClaimArgs) *StringSliceCmd
 	XAutoClaim(ctx context.Context, a XAutoClaimArgs) *XAutoClaimCmd
+	XAutoClaimWithDeleted(ctx context.Context, a XAutoClaimArgs) *XAutoClaimWithDeletedCmd
 	XAutoClaimJustID(ctx context.Context, a XAutoClaimArgs) *XAutoClaimJustIDCmd
 	XTrimMaxLen(ctx context.Context, key string, maxLen int64) *IntCmd
 	XTrimMaxLenApprox(ctx context.Context, key string, maxLen, limit int64) *IntCmd
@@ -1231,6 +1234,8 @@ func (c *Compat) SetArgs(ctx context.Context, key string, value any, a SetArgs) 
 	switch mode := strings.ToUpper(a.Mode); mode {
 	case "XX", "NX":
 		cmd = cmd.Args(mode)
+	case "IFEQ":
+		cmd = cmd.Args(mode, str(a.MatchValue))
 	case "":
 	default:
 		panic(fmt.Sprintf("invalid mode for SET: %s", a.Mode))
@@ -1265,6 +1270,43 @@ func (c *Compat) SetNX(ctx context.Context, key string, value any, expiration ti
 	}
 
 	return newBoolCmd(resp)
+}
+
+// SetIFEQ runs `SET key value IFEQ match-value [EX|PX|KEEPTTL]` (Valkey 8.1+, Redis 8.4+).
+// The key is set only when its current value equals matchValue: the result is "OK" when it was set,
+// and Nil when it was not (the value differs or the key is missing). Zero expiration means no expiration.
+func (c *Compat) SetIFEQ(ctx context.Context, key string, value any, matchValue any, expiration time.Duration) *StatusCmd {
+	cond := c.client.B().Set().Key(key).Value(str(value)).Ifeq(str(matchValue))
+	var cmd valkey.Completed
+	switch {
+	case expiration == KeepTTL:
+		cmd = cond.Keepttl().Build()
+	case expiration > 0 && usePrecise(expiration):
+		cmd = cond.PxMilliseconds(formatMs(expiration)).Build()
+	case expiration > 0:
+		cmd = cond.ExSeconds(formatSec(expiration)).Build()
+	default:
+		cmd = cond.Build()
+	}
+	return newStatusCmd(c.client.Do(ctx, cmd))
+}
+
+// SetIFEQGet runs `SET key value IFEQ match-value GET [EX|PX|KEEPTTL]` (Valkey 8.1+, Redis 8.4+) and returns the
+// previous value of the key (Nil when the key did not exist).
+func (c *Compat) SetIFEQGet(ctx context.Context, key string, value any, matchValue any, expiration time.Duration) *StringCmd {
+	get := c.client.B().Set().Key(key).Value(str(value)).Ifeq(str(matchValue)).Get()
+	var cmd valkey.Completed
+	switch {
+	case expiration == KeepTTL:
+		cmd = get.Keepttl().Build()
+	case expiration > 0 && usePrecise(expiration):
+		cmd = get.PxMilliseconds(formatMs(expiration)).Build()
+	case expiration > 0:
+		cmd = get.ExSeconds(formatSec(expiration)).Build()
+	default:
+		cmd = get.Build()
+	}
+	return newStringCmd(c.client.Do(ctx, cmd))
 }
 
 func (c *Compat) SetFromBuffer(ctx context.Context, key string, buf []byte) *StatusCmd {
@@ -2367,6 +2409,17 @@ func (c *Compat) XAutoClaim(ctx context.Context, a XAutoClaimArgs) *XAutoClaimCm
 		resp = c.client.Do(ctx, c.client.B().Xautoclaim().Key(a.Stream).Group(a.Group).Consumer(a.Consumer).MinIdleTime(strconv.FormatInt(formatMs(a.MinIdle), 10)).Start(a.Start).Build())
 	}
 	return newXAutoClaimCmd(resp)
+}
+
+// XAutoClaimWithDeleted is XAutoClaim that also returns the IDs of pending entries that no longer exist in the stream.
+func (c *Compat) XAutoClaimWithDeleted(ctx context.Context, a XAutoClaimArgs) *XAutoClaimWithDeletedCmd {
+	var resp valkey.ValkeyResult
+	if a.Count > 0 {
+		resp = c.client.Do(ctx, c.client.B().Xautoclaim().Key(a.Stream).Group(a.Group).Consumer(a.Consumer).MinIdleTime(strconv.FormatInt(formatMs(a.MinIdle), 10)).Start(a.Start).Count(a.Count).Build())
+	} else {
+		resp = c.client.Do(ctx, c.client.B().Xautoclaim().Key(a.Stream).Group(a.Group).Consumer(a.Consumer).MinIdleTime(strconv.FormatInt(formatMs(a.MinIdle), 10)).Start(a.Start).Build())
+	}
+	return newXAutoClaimWithDeletedCmd(resp)
 }
 
 func (c *Compat) XAutoClaimJustID(ctx context.Context, a XAutoClaimArgs) *XAutoClaimJustIDCmd {

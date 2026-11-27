@@ -1338,6 +1338,77 @@ func (cmd *XAutoClaimCmd) Result() (messages []XMessage, start string, err error
 	return cmd.val, cmd.start, cmd.err
 }
 
+// XAutoClaimWithDeletedCmd is the result of XAutoClaimWithDeleted: the claimed messages, the next start ID and the
+// IDs of entries that were in the pending list but no longer exist in the stream.
+type XAutoClaimWithDeletedCmd struct {
+	err        error
+	start      string
+	val        []XMessage
+	deletedIDs []string
+}
+
+func (cmd *XAutoClaimWithDeletedCmd) from(res valkey.ValkeyResult) {
+	arr, err := res.ToArray()
+	if err != nil {
+		cmd.SetErr(err)
+		return
+	}
+	if len(arr) < 2 {
+		cmd.SetErr(fmt.Errorf("got %d, wanted 2 or 3", len(arr)))
+		return
+	}
+	start, err := arr[0].ToString()
+	if err != nil {
+		cmd.SetErr(err)
+		return
+	}
+	ranges, err := arr[1].AsXRange()
+	if err != nil {
+		cmd.SetErr(err)
+		return
+	}
+	val := make([]XMessage, 0, len(ranges))
+	for _, r := range ranges {
+		val = append(val, newXMessage(r))
+	}
+	var deleted []string
+	if len(arr) > 2 { // the deleted IDs are part of the reply since Redis 7.0
+		if deleted, err = arr[2].AsStrSlice(); err != nil {
+			cmd.SetErr(err)
+			return
+		}
+	}
+	cmd.val, cmd.start, cmd.deletedIDs = val, start, deleted
+}
+
+func newXAutoClaimWithDeletedCmd(res valkey.ValkeyResult) *XAutoClaimWithDeletedCmd {
+	cmd := &XAutoClaimWithDeletedCmd{}
+	cmd.from(res)
+	return cmd
+}
+
+func (cmd *XAutoClaimWithDeletedCmd) SetVal(val []XMessage, start string, deletedIDs []string) {
+	cmd.val = val
+	cmd.start = start
+	cmd.deletedIDs = deletedIDs
+}
+
+func (cmd *XAutoClaimWithDeletedCmd) SetErr(err error) {
+	cmd.err = err
+}
+
+func (cmd *XAutoClaimWithDeletedCmd) Val() (messages []XMessage, start string, deletedIDs []string) {
+	return cmd.val, cmd.start, cmd.deletedIDs
+}
+
+func (cmd *XAutoClaimWithDeletedCmd) Err() error {
+	return cmd.err
+}
+
+func (cmd *XAutoClaimWithDeletedCmd) Result() (messages []XMessage, start string, deletedIDs []string, err error) {
+	return cmd.val, cmd.start, cmd.deletedIDs, cmd.err
+}
+
 type XAutoClaimJustIDCmd struct {
 	err   error
 	start string
@@ -1400,7 +1471,8 @@ type XInfoGroup struct {
 	Consumers       int64
 	Pending         int64
 	EntriesRead     int64
-	Lag             int64
+	// Lag is the number of entries not yet delivered to the group, or -1 when the server cannot determine it.
+	Lag int64
 }
 
 type XInfoGroupsCmd struct {
@@ -1434,7 +1506,12 @@ func (cmd *XInfoGroupsCmd) from(res valkey.ValkeyResult) {
 			group.EntriesRead, _ = attr.AsInt64()
 		}
 		if attr, ok := info["lag"]; ok {
-			group.Lag, _ = attr.AsInt64()
+			// The server replies nil when it cannot work out the lag; report -1 then, as go-redis does.
+			if attr.IsNil() {
+				group.Lag = -1
+			} else {
+				group.Lag, _ = attr.AsInt64()
+			}
 		}
 		if attr, ok := info["last-delivered-id"]; ok {
 			group.LastDeliveredID, _ = attr.ToString()
@@ -2377,10 +2454,13 @@ type Sort struct {
 // SetArgs provides arguments for the SetArgs function.
 type SetArgs struct {
 	ExpireAt time.Time
-	Mode     string
-	TTL      time.Duration
-	Get      bool
-	KeepTTL  bool
+	// Mode can be "NX", "XX", "IFEQ" or empty.
+	Mode string
+	TTL  time.Duration
+	Get  bool
+	// MatchValue is compared with the current value when Mode is "IFEQ": the key is set only if they are equal.
+	MatchValue any
+	KeepTTL    bool
 }
 
 // SetCondition is the condition for MSetEX

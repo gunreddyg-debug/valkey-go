@@ -462,6 +462,18 @@ func (c *Pipeline) SetNX(ctx context.Context, key string, value any, expiration 
 	return ret
 }
 
+func (c *Pipeline) SetIFEQ(ctx context.Context, key string, value any, matchValue any, expiration time.Duration) *StatusCmd {
+	ret := c.comp.SetIFEQ(ctx, key, value, matchValue, expiration)
+	c.rets = append(c.rets, ret)
+	return ret
+}
+
+func (c *Pipeline) SetIFEQGet(ctx context.Context, key string, value any, matchValue any, expiration time.Duration) *StringCmd {
+	ret := c.comp.SetIFEQGet(ctx, key, value, matchValue, expiration)
+	c.rets = append(c.rets, ret)
+	return ret
+}
+
 func (c *Pipeline) SetXX(ctx context.Context, key string, value any, expiration time.Duration) *BoolCmd {
 	ret := c.comp.SetXX(ctx, key, value, expiration)
 	c.rets = append(c.rets, ret)
@@ -1214,6 +1226,12 @@ func (c *Pipeline) XClaimJustID(ctx context.Context, a XClaimArgs) *StringSliceC
 
 func (c *Pipeline) XAutoClaim(ctx context.Context, a XAutoClaimArgs) *XAutoClaimCmd {
 	ret := c.comp.XAutoClaim(ctx, a)
+	c.rets = append(c.rets, ret)
+	return ret
+}
+
+func (c *Pipeline) XAutoClaimWithDeleted(ctx context.Context, a XAutoClaimArgs) *XAutoClaimWithDeletedCmd {
+	ret := c.comp.XAutoClaimWithDeleted(ctx, a)
 	c.rets = append(c.rets, ret)
 	return ret
 }

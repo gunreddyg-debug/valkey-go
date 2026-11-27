@@ -2347,6 +2347,128 @@ func testAdapter(resp3 bool) {
 				"round-tripped 10 MiB payload does not match")
 		})
 
+		It("should SetIFEQ when value matches", func() {
+			skipBeforeServerVersion(adapter, "8.1", "8.4", "SET IFEQ")
+
+			// Set initial value
+			err := adapter.Set(ctx, "key", "old-value", 0).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Update only if current value is "old-value"
+			result := adapter.SetIFEQ(ctx, "key", "new-value", "old-value", 0)
+			Expect(result.Err()).NotTo(HaveOccurred())
+			Expect(result.Val()).To(Equal("OK"))
+
+			// Verify value was updated
+			val, err := adapter.Get(ctx, "key").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(val).To(Equal("new-value"))
+		})
+
+		It("should SetIFEQ fail when value does not match", func() {
+			skipBeforeServerVersion(adapter, "8.1", "8.4", "SET IFEQ")
+
+			// Set initial value
+			err := adapter.Set(ctx, "key", "current-value", 0).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Try to update with wrong match value
+			result := adapter.SetIFEQ(ctx, "key", "new-value", "wrong-value", 0)
+			Expect(result.Err()).To(Equal(Nil))
+
+			// Verify value was NOT updated
+			val, err := adapter.Get(ctx, "key").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(val).To(Equal("current-value"))
+		})
+
+		It("should SetIFEQ with expiration", func() {
+			skipBeforeServerVersion(adapter, "8.1", "8.4", "SET IFEQ")
+
+			// Set initial value
+			err := adapter.Set(ctx, "key", "token-123", 0).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Update with expiration
+			result := adapter.SetIFEQ(ctx, "key", "token-456", "token-123", 500*time.Millisecond)
+			Expect(result.Err()).NotTo(HaveOccurred())
+			Expect(result.Val()).To(Equal("OK"))
+
+			// Verify value was updated
+			val, err := adapter.Get(ctx, "key").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(val).To(Equal("token-456"))
+
+			// Wait for expiration
+			Eventually(func() error {
+				return adapter.Get(ctx, "key").Err()
+			}, "1s", "100ms").Should(Equal(Nil))
+		})
+
+		It("should SetIFEQGet return previous value", func() {
+			skipBeforeServerVersion(adapter, "8.1", "8.4", "SET IFEQ")
+
+			// Set initial value
+			err := adapter.Set(ctx, "key", "old-value", 0).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Update and get previous value
+			result := adapter.SetIFEQGet(ctx, "key", "new-value", "old-value", 0)
+			Expect(result.Err()).NotTo(HaveOccurred())
+			Expect(result.Val()).To(Equal("old-value"))
+
+			// Verify value was updated
+			val, err := adapter.Get(ctx, "key").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(val).To(Equal("new-value"))
+		})
+
+		It("should SetArgs with IFEQ", func() {
+			skipBeforeServerVersion(adapter, "8.1", "8.4", "SET IFEQ")
+
+			// Set initial value
+			err := adapter.Set(ctx, "counter", "100", 0).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Update with IFEQ
+			args := SetArgs{
+				Mode:       "IFEQ",
+				MatchValue: "100",
+				TTL:        1 * time.Hour,
+			}
+			result := adapter.SetArgs(ctx, "counter", "200", args)
+			Expect(result.Err()).NotTo(HaveOccurred())
+			Expect(result.Val()).To(Equal("OK"))
+
+			// Verify value was updated
+			val, err := adapter.Get(ctx, "counter").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(val).To(Equal("200"))
+		})
+
+		It("should SetArgs with IFEQ and GET", func() {
+			skipBeforeServerVersion(adapter, "8.1", "8.4", "SET IFEQ")
+
+			// Set initial value
+			err := adapter.Set(ctx, "key", "old", 0).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Update with IFEQ and GET old value
+			args := SetArgs{
+				Mode:       "IFEQ",
+				MatchValue: "old",
+				Get:        true,
+			}
+			result := adapter.SetArgs(ctx, "key", "new", args)
+			Expect(result.Err()).NotTo(HaveOccurred())
+			Expect(result.Val()).To(Equal("old"))
+
+			// Verify value was updated
+			val, err := adapter.Get(ctx, "key").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(val).To(Equal("new"))
+		})
+
 		It("should SetEX", func() {
 			err := adapter.SetEX(ctx, "key", "hello", 1*time.Second).Err()
 			Expect(err).NotTo(HaveOccurred())
@@ -6761,6 +6883,31 @@ func testAdapter(resp3 bool) {
 				})
 			}
 
+			It("should XAutoClaim return deletedIDs", func() {
+				skipBeforeServerVersion(adapter, "7.2", "7.0", "XAUTOCLAIM deleted IDs")
+				xca := XAutoClaimArgs{
+					Stream:   "stream",
+					Group:    "group",
+					Consumer: "consumer",
+					Start:    "-",
+					Count:    3,
+				}
+				err := adapter.XDel(ctx, "stream", "2-0").Err()
+				Expect(err).NotTo(HaveOccurred())
+
+				msgs, start, ids, err := adapter.XAutoClaimWithDeleted(ctx, xca).Result()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(start).To(Equal("0-0"))
+				Expect(msgs).To(Equal([]XMessage{{
+					ID:     "1-0",
+					Values: map[string]any{"uno": "un"},
+				}, {
+					ID:     "3-0",
+					Values: map[string]any{"tres": "troix"},
+				}}))
+				Expect(ids).To(Equal([]string{"2-0"}))
+			})
+
 			It("should XClaim", func() {
 				msgs, err := adapter.XClaim(ctx, XClaimArgs{
 					Stream:   "stream",
@@ -7137,6 +7284,37 @@ func testAdapter(resp3 bool) {
 				Expect(res).To(Equal([]XInfoConsumer{
 					{Name: "consumer1", Pending: 2, Idle: 0},
 					{Name: "consumer2", Pending: 1, Idle: 0},
+				}))
+			})
+
+			It("should return -1 for nil lag in XINFO GROUPS", func() {
+				skipBeforeServerVersion(adapter, "7.2", "7.0", "XINFO GROUPS lag")
+				_, err := adapter.XAdd(ctx, XAddArgs{Stream: "s", ID: "0-1", Values: []string{"foo", "1"}}).Result()
+				Expect(err).NotTo(HaveOccurred())
+
+				adapter.XAdd(ctx, XAddArgs{Stream: "s", ID: "0-2", Values: []string{"foo", "2"}})
+				Expect(err).NotTo(HaveOccurred())
+				adapter.XAdd(ctx, XAddArgs{Stream: "s", ID: "0-3", Values: []string{"foo", "3"}})
+				Expect(err).NotTo(HaveOccurred())
+
+				err = adapter.XGroupCreate(ctx, "s", "g", "0").Err()
+				Expect(err).NotTo(HaveOccurred())
+				err = adapter.XReadGroup(ctx, XReadGroupArgs{Group: "g", Consumer: "c", Streams: []string{"s", ">"}, Count: 1, Block: -1, NoAck: false}).Err()
+				Expect(err).NotTo(HaveOccurred())
+
+				adapter.XDel(ctx, "s", "0-2")
+
+				res, err := adapter.XInfoGroups(ctx, "s").Result()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(res).To(Equal([]XInfoGroup{
+					{
+						Name:            "g",
+						Consumers:       1,
+						Pending:         1,
+						LastDeliveredID: "0-1",
+						EntriesRead:     1,
+						Lag:             -1, // nil lag from Redis is reported as -1
+					},
 				}))
 			})
 		})
