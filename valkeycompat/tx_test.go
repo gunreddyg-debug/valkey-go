@@ -186,4 +186,16 @@ func testAdapterTxPipeline(resp3 bool) {
 			pipe.GetToBuffer(ctx, "key", make([]byte, 10))
 		}).To(Panic())
 	})
+
+	It("returns no error when there are no commands", func() {
+		err := adapter.Watch(ctx, func(tx Tx) error {
+			_, err := tx.TxPipelined(ctx, func(Pipeliner) error { return nil })
+			return err
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		v, err := adapter.Ping(ctx).Result()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(v).To(Equal("PONG"))
+	})
 }

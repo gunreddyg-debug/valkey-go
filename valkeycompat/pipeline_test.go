@@ -155,6 +155,60 @@ func testAdapterPipeline(resp3 bool) {
 			Expect(err).To(Equal(cmder.Err()))
 		})
 	}
+
+	It("supports block style", func() {
+		var get *StringCmd
+		cmds, err := adapter.Pipelined(ctx, func(pipe Pipeliner) error {
+			get = pipe.Get(ctx, "foo")
+			return nil
+		})
+		Expect(err).To(Equal(Nil))
+		Expect(cmds).To(HaveLen(1))
+		Expect(cmds[0]).To(Equal(get))
+		Expect(get.Err()).To(Equal(Nil))
+		Expect(get.Val()).To(Equal(""))
+	})
+
+	var pipe Pipeliner
+
+	assertPipeline := func() {
+		It("handles val/err", func() {
+			err := adapter.Set(ctx, "key", "value", 0).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			get := pipe.Get(ctx, "key")
+			cmds, err := pipe.Exec(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cmds).To(HaveLen(1))
+
+			val, err := get.Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(val).To(Equal("value"))
+		})
+
+		It("supports custom command", func() {
+			pipe.Do(ctx, "ping")
+			cmds, err := pipe.Exec(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cmds).To(HaveLen(1))
+		})
+	}
+
+	Describe("Pipeline", func() {
+		BeforeEach(func() {
+			pipe = adapter.Pipeline()
+		})
+
+		assertPipeline()
+	})
+
+	Describe("TxPipeline", func() {
+		BeforeEach(func() {
+			pipe = adapter.TxPipeline()
+		})
+
+		assertPipeline()
+	})
 }
 
 func TestPipeliner(t *testing.T) {

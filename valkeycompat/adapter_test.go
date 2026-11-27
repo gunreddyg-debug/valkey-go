@@ -27,7 +27,9 @@
 package valkeycompat
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -286,6 +288,31 @@ func testAdapter(resp3 bool) {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(waitedAOF).To(Equal([]int64{0, 0}))
 			})
+
+			It("should Wait", func() {
+				const wait = 3 * time.Second
+
+				// assume testing on single redis instance
+				start := time.Now()
+				val, err := adapter.Wait(ctx, 1, wait).Result()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(val).To(Equal(int64(0)))
+				Expect(time.Now()).To(BeTemporally("~", start.Add(wait), 3*time.Second))
+			})
+
+			It("should WaitAOF", func() {
+				skipBeforeServerVersion(adapter, "7.2", "7.2", "WAITAOF")
+				const waitAOF = 3 * time.Second
+
+				// No replicas here, so WAITAOF blocks until timeout and returns
+				// the two counts [numlocal, numreplicas]. numLocal=0 skips AOF.
+				start := time.Now()
+				val, err := adapter.WaitAOF(ctx, 0, 1, waitAOF).Result()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(val).To(HaveLen(2))
+				Expect(val[1]).To(Equal(int64(0)))
+				Expect(time.Now()).To(BeTemporally("~", start.Add(waitAOF), 3*time.Second))
+			})
 		}
 
 		It("should Migrate", func() {
@@ -543,6 +570,123 @@ func testAdapter(resp3 bool) {
 		})
 	})
 
+	Describe("Latency", Label("NonRedisEnterprise"), func() {
+		// go-redis creates latency events with DEBUG SLEEP, which the CI servers
+		// disable. A busy loop in a script trips the latency monitor the same way.
+		busy := func(seconds float64) error {
+			return adapter.Eval(ctx, "local t = os.clock() while os.clock() - t < tonumber(ARGV[1]) do end return 1", nil, seconds).Err()
+		}
+
+		BeforeEach(func() {
+			skipBeforeServerVersion(adapter, "8.0", "7.4", "os.clock in scripts")
+		})
+
+		It("returns latencies", func() {
+			const key = "latency-monitor-threshold"
+
+			// reset all latencies first to ensure clean state
+			err := adapter.LatencyReset(ctx).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			old := adapter.ConfigGet(ctx, key).Val()
+			adapter.ConfigSet(ctx, key, "1")
+			defer adapter.ConfigSet(ctx, key, old[key])
+
+			err = busy(0.01)
+			Expect(err).NotTo(HaveOccurred())
+
+			result, err := adapter.Latency(ctx).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(result)).NotTo(BeZero())
+		})
+
+		It("reset all latencies", func() {
+			const key = "latency-monitor-threshold"
+
+			// reset all latencies
+			err := adapter.LatencyReset(ctx).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			old := adapter.ConfigGet(ctx, key).Val()
+			// Use a higher threshold (100ms) to avoid capturing normal operations
+			// that could cause flakiness due to timing variations on busy CI runners.
+			adapter.ConfigSet(ctx, key, "100")
+			defer adapter.ConfigSet(ctx, key, old[key])
+
+			// get latency after reset
+			result, err := adapter.Latency(ctx).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(result)).Should(Equal(0))
+
+			// create a new latency event by sleeping past the threshold
+			err = busy(0.15)
+			Expect(err).NotTo(HaveOccurred())
+
+			// get latency after create a new latency
+			result, err = adapter.Latency(ctx).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(result)).Should(BeNumerically(">=", 1))
+			triggered := result[0].Name
+
+			// reset all latencies again
+			err = adapter.LatencyReset(ctx).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// get latency after reset again. Don't assert total length is 0:
+			// other operations on the connection may briefly land in the
+			// latency log on a slow CI runner. Instead verify the specific
+			// event we triggered is gone.
+			result, err = adapter.Latency(ctx).Result()
+			Expect(err).NotTo(HaveOccurred())
+			for _, event := range result {
+				if event.Name == triggered {
+					Fail("Event " + triggered + " should have been reset")
+				}
+			}
+		})
+
+		It("reset latencies by add event name args", func() {
+			const key = "latency-monitor-threshold"
+
+			// reset all latencies first to ensure clean state
+			err := adapter.LatencyReset(ctx).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			old := adapter.ConfigGet(ctx, key).Val()
+			// Use a higher threshold (100ms) to avoid capturing normal operations
+			// that could cause flakiness due to timing variations
+			adapter.ConfigSet(ctx, key, "100")
+			defer adapter.ConfigSet(ctx, key, old[key])
+
+			result, err := adapter.Latency(ctx).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(result)).Should(Equal(0))
+
+			// Use a longer sleep (150ms) to ensure it exceeds the 100ms threshold
+			err = busy(0.15)
+			Expect(err).NotTo(HaveOccurred())
+
+			result, err = adapter.Latency(ctx).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(result)).Should(BeNumerically(">=", 1))
+
+			// reset latency by event name
+			eventName := result[0].Name
+			err = adapter.LatencyReset(ctx, eventName).Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Verify the specific event was reset (not that all events are gone)
+			// This avoids flakiness from other operations triggering latency events
+			result, err = adapter.Latency(ctx).Result()
+			Expect(err).NotTo(HaveOccurred())
+			for _, event := range result {
+				if event.Name == eventName {
+					Fail("Event " + eventName + " should have been reset")
+				}
+			}
+		})
+	})
+
 	Describe("keys", func() {
 		It("should Del", func() {
 			err := adapter.Set(ctx, "key1", "Hello", 0).Err()
@@ -725,6 +869,28 @@ func testAdapter(resp3 bool) {
 			})
 		}
 
+		It("should ExpireTime", func() {
+			skipBeforeServerVersion(adapter, "7.2", "7.0", "EXPIRETIME")
+			// The command returns -1 if the key exists but has no associated expiration time.
+			// The command returns -2 if the key does not exist.
+			expireTimeCmd := adapter.ExpireTime(ctx, "key")
+			Expect(expireTimeCmd.Err()).NotTo(HaveOccurred())
+			Expect(expireTimeCmd.Val() < 0).To(Equal(true))
+
+			set := adapter.Set(ctx, "key", "hello", 0)
+			Expect(set.Err()).NotTo(HaveOccurred())
+			Expect(set.Val()).To(Equal("OK"))
+
+			expireAt := time.Now().Add(time.Minute)
+			expireAtCmd := adapter.ExpireAt(ctx, "key", expireAt)
+			Expect(expireAtCmd.Err()).NotTo(HaveOccurred())
+			Expect(expireAtCmd.Val()).To(Equal(true))
+
+			expireTimeCmd = adapter.ExpireTime(ctx, "key")
+			Expect(expireTimeCmd.Err()).NotTo(HaveOccurred())
+			Expect(expireTimeCmd.Val().Seconds()).To(BeNumerically("==", expireAt.Unix()))
+		})
+
 		It("should Keys", func() {
 			mset := adapter.MSet(ctx, "one", "1", "two", "2", "three", "3", "four", "4")
 			Expect(mset.Err()).NotTo(HaveOccurred())
@@ -825,6 +991,28 @@ func testAdapter(resp3 bool) {
 			pttl := adapter.PTTL(ctx, "key")
 			Expect(pttl.Err()).NotTo(HaveOccurred())
 			Expect(pttl.Val()).To(BeNumerically("~", expiration, 100*time.Millisecond))
+		})
+
+		It("should PExpireTime", func() {
+			skipBeforeServerVersion(adapter, "7.2", "7.0", "PEXPIRETIME")
+			// The command returns -1 if the key exists but has no associated expiration time.
+			// The command returns -2 if the key does not exist.
+			pExpireTime := adapter.PExpireTime(ctx, "key")
+			Expect(pExpireTime.Err()).NotTo(HaveOccurred())
+			Expect(pExpireTime.Val() < 0).To(Equal(true))
+
+			set := adapter.Set(ctx, "key", "hello", 0)
+			Expect(set.Err()).NotTo(HaveOccurred())
+			Expect(set.Val()).To(Equal("OK"))
+
+			timestamp := time.Now().Add(time.Minute)
+			expireAt := adapter.PExpireAt(ctx, "key", timestamp)
+			Expect(expireAt.Err()).NotTo(HaveOccurred())
+			Expect(expireAt.Val()).To(Equal(true))
+
+			pExpireTime = adapter.PExpireTime(ctx, "key")
+			Expect(pExpireTime.Err()).NotTo(HaveOccurred())
+			Expect(pExpireTime.Val().Milliseconds()).To(BeNumerically("==", timestamp.UnixMilli()))
 		})
 
 		It("should PTTL", func() {
@@ -2109,6 +2297,56 @@ func testAdapter(resp3 bool) {
 			Expect(get.Val()).To(Equal("hello"))
 		})
 
+		It("should SetFromBuffer and GetToBuffer round-trip", func() {
+			payload := bytes.Repeat([]byte{'x'}, 1024)
+			set := adapter.SetFromBuffer(ctx, "key", payload)
+			Expect(set.Err()).NotTo(HaveOccurred())
+			Expect(set.Val()).To(Equal("OK"))
+
+			buf := make([]byte, len(payload))
+			get := adapter.GetToBuffer(ctx, "key", buf)
+			Expect(get.Err()).NotTo(HaveOccurred())
+			Expect(get.Val()).To(Equal(len(payload)))
+			Expect(get.Bytes()).To(Equal(payload))
+		})
+
+		It("should SetFromBuffer and GetToBuffer with payload > read buffer", func() {
+			// Default read buffer is 32 KiB; pick something larger so the
+			// payload spills past the bufio buffer on the read path.
+			payload := bytes.Repeat([]byte{'z'}, 128*1024)
+			Expect(adapter.SetFromBuffer(ctx, "key", payload).Err()).NotTo(HaveOccurred())
+
+			buf := make([]byte, len(payload))
+			get := adapter.GetToBuffer(ctx, "key", buf)
+			Expect(get.Err()).NotTo(HaveOccurred())
+			Expect(get.Val()).To(Equal(len(payload)))
+			Expect(get.Bytes()).To(Equal(payload))
+		})
+
+		It("should SetFromBuffer and GetToBuffer with 10 MiB payload", func() {
+			// Large-payload regression coverage: exercises many bufio
+			// refills on the read path and several direct socket writes
+			// on the write path. Uses crypto/rand so any byte-shift bug
+			// (e.g. the verbatim-misdetection issue addressed by
+			// commit fix(proto): avoid stale line[0] after bufio refill)
+			// surfaces as a mismatch rather than coincidentally aligning.
+			const size = 10 * 1024 * 1024
+			payload := make([]byte, size)
+			_, err := rand.Read(payload)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(adapter.SetFromBuffer(ctx, "key", payload).Err()).NotTo(HaveOccurred())
+
+			buf := make([]byte, size)
+			get := adapter.GetToBuffer(ctx, "key", buf)
+			Expect(get.Err()).NotTo(HaveOccurred())
+			Expect(get.Val()).To(Equal(size))
+			// Use bytes.Equal rather than gomega's Equal to keep the
+			// diff out of the failure message if a single byte is off.
+			Expect(bytes.Equal(get.Bytes(), payload)).To(BeTrue(),
+				"round-tripped 10 MiB payload does not match")
+		})
+
 		It("should SetEX", func() {
 			err := adapter.SetEX(ctx, "key", "hello", 1*time.Second).Err()
 			Expect(err).NotTo(HaveOccurred())
@@ -2811,6 +3049,7 @@ func testAdapter(resp3 bool) {
 			})
 
 			It("should HExpire", Label("hash-expiration", "NonRedisEnterprise"), func() {
+				skipBeforeServerVersion(adapter, "9.0", "7.4", "Hash field expiration")
 				res, err := adapter.HExpire(ctx, "no_such_key", 10*time.Second, "field1", "field2", "field3").Result()
 				Expect(err).To(BeNil())
 				Expect(res).To(BeEquivalentTo([]int64{-2, -2, -2}))
@@ -2826,6 +3065,7 @@ func testAdapter(resp3 bool) {
 			})
 
 			It("should HPExpire", Label("hash-expiration", "NonRedisEnterprise"), func() {
+				skipBeforeServerVersion(adapter, "9.0", "7.4", "Hash field expiration")
 				res, err := adapter.HPExpire(ctx, "no_such_key", 10*time.Second, "field1", "field2", "field3").Result()
 				Expect(err).To(BeNil())
 				Expect(res).To(BeEquivalentTo([]int64{-2, -2, -2}))
@@ -2841,6 +3081,7 @@ func testAdapter(resp3 bool) {
 			})
 
 			It("should HExpireAt", Label("hash-expiration", "NonRedisEnterprise"), func() {
+				skipBeforeServerVersion(adapter, "9.0", "7.4", "Hash field expiration")
 				resEmpty, err := adapter.HExpireAt(ctx, "no_such_key", time.Now().Add(10*time.Second), "field1", "field2", "field3").Result()
 				Expect(err).To(BeNil())
 				Expect(resEmpty).To(BeEquivalentTo([]int64{-2, -2, -2}))
@@ -2856,6 +3097,7 @@ func testAdapter(resp3 bool) {
 			})
 
 			It("should HPExpireAt", Label("hash-expiration", "NonRedisEnterprise"), func() {
+				skipBeforeServerVersion(adapter, "9.0", "7.4", "Hash field expiration")
 				resEmpty, err := adapter.HPExpireAt(ctx, "no_such_key", time.Now().Add(10*time.Second), "field1", "field2", "field3").Result()
 				Expect(err).To(BeNil())
 				Expect(resEmpty).To(BeEquivalentTo([]int64{-2, -2, -2}))
@@ -2871,6 +3113,7 @@ func testAdapter(resp3 bool) {
 			})
 
 			It("should HPersist", Label("hash-expiration", "NonRedisEnterprise"), func() {
+				skipBeforeServerVersion(adapter, "9.0", "7.4", "Hash field expiration")
 				resEmpty, err := adapter.HPersist(ctx, "no_such_key", "field1", "field2", "field3").Result()
 				Expect(err).To(BeNil())
 				Expect(resEmpty).To(BeEquivalentTo([]int64{-2, -2, -2}))
@@ -2894,6 +3137,7 @@ func testAdapter(resp3 bool) {
 			})
 
 			It("should HExpireTime", Label("hash-expiration", "NonRedisEnterprise"), func() {
+				skipBeforeServerVersion(adapter, "9.0", "7.4", "Hash field expiration")
 				resEmpty, err := adapter.HExpireTime(ctx, "no_such_key", "field1", "field2", "field3").Result()
 				Expect(err).To(BeNil())
 				Expect(resEmpty).To(BeEquivalentTo([]int64{-2, -2, -2}))
@@ -2913,6 +3157,7 @@ func testAdapter(resp3 bool) {
 			})
 
 			It("should HPExpireTime", Label("hash-expiration", "NonRedisEnterprise"), func() {
+				skipBeforeServerVersion(adapter, "9.0", "7.4", "Hash field expiration")
 				resEmpty, err := adapter.HPExpireTime(ctx, "no_such_key", "field1", "field2", "field3").Result()
 				Expect(err).To(BeNil())
 				Expect(resEmpty).To(BeEquivalentTo([]int64{-2, -2, -2}))
@@ -2933,6 +3178,7 @@ func testAdapter(resp3 bool) {
 			})
 
 			It("should HTTL", Label("hash-expiration", "NonRedisEnterprise"), func() {
+				skipBeforeServerVersion(adapter, "9.0", "7.4", "Hash field expiration")
 				resEmpty, err := adapter.HTTL(ctx, "no_such_key", "field1", "field2", "field3").Result()
 				Expect(err).To(BeNil())
 				Expect(resEmpty).To(BeEquivalentTo([]int64{-2, -2, -2}))
@@ -2952,6 +3198,7 @@ func testAdapter(resp3 bool) {
 			})
 
 			It("should HPTTL", Label("hash-expiration", "NonRedisEnterprise"), func() {
+				skipBeforeServerVersion(adapter, "9.0", "7.4", "Hash field expiration")
 				resEmpty, err := adapter.HPTTL(ctx, "no_such_key", "field1", "field2", "field3").Result()
 				Expect(err).To(BeNil())
 				Expect(resEmpty).To(BeEquivalentTo([]int64{-2, -2, -2}))
@@ -2970,6 +3217,106 @@ func testAdapter(resp3 bool) {
 				Expect(res[0]).To(BeNumerically("~", 10*time.Second.Milliseconds(), 1))
 			})
 		}
+
+		It("should HPExpireAt beyond the nanosecond timestamp range", Label("hash-expiration"), func() {
+			skipBeforeServerVersion(adapter, "9.0", "7.4", "Hash field expiration")
+			deadline := time.Date(2270, time.January, 2, 3, 4, 5, 123000000, time.UTC)
+			Expect(adapter.HSet(ctx, "myhash", "key1", "hello", "key2", "world").Err()).NotTo(HaveOccurred())
+			Expect(adapter.HPExpireAt(ctx, "myhash", deadline, "key1").Result()).To(Equal([]int64{1}))
+			Expect(adapter.HPExpireAtWithArgs(ctx, "myhash", deadline, HExpireArgs{NX: true}, "key2").Result()).To(Equal([]int64{1}))
+			Expect(adapter.HMGet(ctx, "myhash", "key1", "key2").Result()).To(Equal([]any{"hello", "world"}))
+			Expect(adapter.HPExpireTime(ctx, "myhash", "key1", "key2").Result()).To(Equal([]int64{9467204645123, 9467204645123}))
+		})
+
+		It("should HGETDEL", Label("hash", "HGETDEL"), func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.0", "HGETDEL")
+
+			err := adapter.HSet(ctx, "myhash", "f1", "val1", "f2", "val2", "f3", "val3").Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Execute HGETDEL on fields f1 and f2.
+			res, err := adapter.HGetDel(ctx, "myhash", "f1", "f2").Result()
+			Expect(err).NotTo(HaveOccurred())
+			// Expect the returned values for f1 and f2.
+			Expect(res).To(Equal([]string{"val1", "val2"}))
+
+			// Verify that f1 and f2 have been deleted, while f3 remains.
+			remaining, err := adapter.HMGet(ctx, "myhash", "f1", "f2", "f3").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(remaining[0]).To(BeNil())
+			Expect(remaining[1]).To(BeNil())
+			Expect(remaining[2]).To(Equal("val3"))
+		})
+
+		It("should return nil responses for HGETDEL on non-existent key", Label("hash", "HGETDEL"), func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.0", "HGETDEL")
+			// HGETDEL on a key that does not exist.
+			res, err := adapter.HGetDel(ctx, "nonexistent", "f1", "f2").Result()
+			Expect(err).To(BeNil())
+			Expect(res).To(Equal([]string{"", ""}))
+		})
+
+		It("should HGETEX with EX option", Label("hash", "HGETEX"), func() {
+			skipBeforeServerVersion(adapter, "9.0", "8.0", "HGETEX")
+
+			err := adapter.HSet(ctx, "myhash", "f1", "val1", "f2", "val2").Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Call HGETEX with EX option and 60 seconds TTL.
+			opt := HGetEXOptions{
+				ExpirationType: HGetEXExpirationEX,
+				ExpirationVal:  60,
+			}
+			res, err := adapter.HGetEXWithArgs(ctx, "myhash", &opt, "f1", "f2").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal([]string{"val1", "val2"}))
+		})
+
+		It("should HGETEX with PERSIST option", Label("hash", "HGETEX"), func() {
+			skipBeforeServerVersion(adapter, "9.0", "8.0", "HGETEX")
+
+			err := adapter.HSet(ctx, "myhash", "f1", "val1", "f2", "val2").Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Call HGETEX with PERSIST (no TTL value needed).
+			opt := HGetEXOptions{ExpirationType: HGetEXExpirationPERSIST}
+			res, err := adapter.HGetEXWithArgs(ctx, "myhash", &opt, "f1", "f2").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal([]string{"val1", "val2"}))
+		})
+
+		It("should HGETEX with EXAT option", Label("hash", "HGETEX"), func() {
+			skipBeforeServerVersion(adapter, "9.0", "8.0", "HGETEX")
+
+			err := adapter.HSet(ctx, "myhash", "f1", "val1", "f2", "val2").Err()
+			Expect(err).NotTo(HaveOccurred())
+
+			// Set expiration at a specific Unix timestamp (60 seconds from now).
+			expireAt := time.Now().Add(60 * time.Second).Unix()
+			opt := HGetEXOptions{
+				ExpirationType: HGetEXExpirationEXAT,
+				ExpirationVal:  expireAt,
+			}
+			res, err := adapter.HGetEXWithArgs(ctx, "myhash", &opt, "f1", "f2").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal([]string{"val1", "val2"}))
+		})
+
+		It("should HSETEX with multiple field operations", Label("hash", "HSETEX"), func() {
+			skipBeforeServerVersion(adapter, "9.0", "8.0", "HSETEX")
+
+			opt := HSetEXOptions{
+				ExpirationType: HSetEXExpirationEX,
+				ExpirationVal:  60,
+			}
+			res, err := adapter.HSetEXWithArgs(ctx, "myhash", &opt, "f1", "val1", "f2", "val2").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal(int64(1)))
+
+			values, err := adapter.HMGet(ctx, "myhash", "f1", "f2").Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(values).To(Equal([]any{"val1", "val2"}))
+		})
 	})
 
 	Describe("hyperloglog", func() {
@@ -4507,6 +4854,165 @@ func testAdapter(resp3 bool) {
 			}).Result()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(added).To(Equal(int64(0)))
+
+			vals, err = adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vals).To(Equal([]Z{{Score: 2, Member: "one"}}))
+		})
+
+		It("should ZAddArgsNXCh", func() {
+			changed, err := adapter.ZAddArgs(ctx, "zset", ZAddArgs{
+				NX: true,
+				Ch: true,
+				Members: []Z{
+					{Score: 1, Member: "one"},
+				},
+			}).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(changed).To(Equal(int64(1)))
+
+			vals, err := adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vals).To(Equal([]Z{{Score: 1, Member: "one"}}))
+
+			changed, err = adapter.ZAddArgs(ctx, "zset", ZAddArgs{
+				NX: true,
+				Ch: true,
+				Members: []Z{
+					{Score: 2, Member: "one"},
+				},
+			}).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(changed).To(Equal(int64(0)))
+
+			vals, err = adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vals).To(Equal([]Z{{
+				Score:  1,
+				Member: "one",
+			}}))
+		})
+
+		It("should ZAddArgsXXCh", func() {
+			changed, err := adapter.ZAddArgs(ctx, "zset", ZAddArgs{
+				XX: true,
+				Ch: true,
+				Members: []Z{
+					{Score: 1, Member: "one"},
+				},
+			}).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(changed).To(Equal(int64(0)))
+
+			vals, err := adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vals).To(BeEmpty())
+
+			added, err := adapter.ZAdd(ctx, "zset", Z{
+				Score:  1,
+				Member: "one",
+			}).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(added).To(Equal(int64(1)))
+
+			changed, err = adapter.ZAddArgs(ctx, "zset", ZAddArgs{
+				XX: true,
+				Ch: true,
+				Members: []Z{
+					{Score: 2, Member: "one"},
+				},
+			}).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(changed).To(Equal(int64(1)))
+
+			vals, err = adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vals).To(Equal([]Z{{Score: 2, Member: "one"}}))
+		})
+
+		It("should ZAddArgsIncr", func() {
+			score, err := adapter.ZAddArgsIncr(ctx, "zset", ZAddArgs{
+				Members: []Z{
+					{Score: 1, Member: "one"},
+				},
+			}).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(score).To(Equal(float64(1)))
+
+			vals, err := adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vals).To(Equal([]Z{{Score: 1, Member: "one"}}))
+
+			score, err = adapter.ZAddArgsIncr(ctx, "zset", ZAddArgs{
+				Members: []Z{
+					{Score: 1, Member: "one"},
+				},
+			}).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(score).To(Equal(float64(2)))
+
+			vals, err = adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vals).To(Equal([]Z{{Score: 2, Member: "one"}}))
+		})
+
+		It("should ZAddArgsIncrNX", func() {
+			score, err := adapter.ZAddArgsIncr(ctx, "zset", ZAddArgs{
+				NX: true,
+				Members: []Z{
+					{Score: 1, Member: "one"},
+				},
+			}).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(score).To(Equal(float64(1)))
+
+			vals, err := adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vals).To(Equal([]Z{{Score: 1, Member: "one"}}))
+
+			score, err = adapter.ZAddArgsIncr(ctx, "zset", ZAddArgs{
+				NX: true,
+				Members: []Z{
+					{Score: 1, Member: "one"},
+				},
+			}).Result()
+			Expect(err).To(Equal(Nil))
+			Expect(score).To(Equal(float64(0)))
+
+			vals, err = adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vals).To(Equal([]Z{{Score: 1, Member: "one"}}))
+		})
+
+		It("should ZAddArgsIncrXX", func() {
+			score, err := adapter.ZAddArgsIncr(ctx, "zset", ZAddArgs{
+				XX: true,
+				Members: []Z{
+					{Score: 1, Member: "one"},
+				},
+			}).Result()
+			Expect(err).To(Equal(Nil))
+			Expect(score).To(Equal(float64(0)))
+
+			vals, err := adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vals).To(BeEmpty())
+
+			added, err := adapter.ZAdd(ctx, "zset", Z{
+				Score:  1,
+				Member: "one",
+			}).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(added).To(Equal(int64(1)))
+
+			score, err = adapter.ZAddArgsIncr(ctx, "zset", ZAddArgs{
+				XX: true,
+				Members: []Z{
+					{Score: 1, Member: "one"},
+				},
+			}).Result()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(score).To(Equal(float64(2)))
 
 			vals, err = adapter.ZRangeWithScores(ctx, "zset", 0, -1).Result()
 			Expect(err).NotTo(HaveOccurred())
@@ -6298,7 +6804,7 @@ func testAdapter(resp3 bool) {
 					IDs:    []string{"1-0", "2-0", "4-0"},
 				}).Result()
 				if err != nil && (strings.Contains(err.Error(), "unknown command") || strings.Contains(err.Error(), "ERR unknown")) {
-					return
+					Skip("XNACK is not supported by the server")
 				}
 				Expect(err).NotTo(HaveOccurred())
 				Expect(n).To(Equal(int64(2)))
@@ -6383,7 +6889,9 @@ func testAdapter(resp3 bool) {
 				res.IIDsAdded = 0
 				res.IIDsDuplicates = 0
 
-				if resp3 {
+				// entries-added, max-deleted-entry-id, recorded-first-entry-id and entries-read
+				// were added in Redis 7.0; every Valkey release has them.
+				if serverAtLeast(adapter, "7.2", "7.0") {
 					Expect(res).To(Equal(XInfoStream{
 						Length:            3,
 						RadixTreeKeys:     0,
@@ -6436,7 +6944,7 @@ func testAdapter(resp3 bool) {
 				res.IIDsAdded = 0
 				res.IIDsDuplicates = 0
 
-				if resp3 {
+				if serverAtLeast(adapter, "7.2", "7.0") {
 					Expect(res).To(Equal(XInfoStream{
 						Length:               0,
 						RadixTreeKeys:        0,
@@ -6605,7 +7113,7 @@ func testAdapter(resp3 bool) {
 			It("should XINFO GROUPS", func() {
 				res, err := adapter.XInfoGroups(ctx, "stream").Result()
 				Expect(err).NotTo(HaveOccurred())
-				if resp3 {
+				if serverAtLeast(adapter, "7.2", "7.0") {
 					Expect(res).To(Equal([]XInfoGroup{
 						{Name: "group1", Consumers: 2, Pending: 3, LastDeliveredID: "3-0", EntriesRead: 3},
 						{Name: "group2", Consumers: 1, Pending: 2, LastDeliveredID: "3-0", EntriesRead: 3},
@@ -12465,6 +12973,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should HSetEXWithArgs apply ExpirationType without a Condition", func() {
+			skipBeforeServerVersion(adapter, "9.0", "8.0", "HSETEX")
 			res, err := adapter.HSetEXWithArgs(ctx, "hsetex-no-condition", &HSetEXOptions{
 				ExpirationType: HSetEXExpirationEX,
 				ExpirationVal:  100,
@@ -12484,6 +12993,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should MSetEX", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
 			// Test MSetEX with EX (seconds)
 			// Returns 1 when all keys are successfully set
 			mSetEX := adapter.MSetEX(ctx, MSetEXArgs{
@@ -12545,6 +13055,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should MSetEX with PX (milliseconds)", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
 			// Test MSetEX with PX (milliseconds)
 			mSetEX := adapter.MSetEX(ctx, MSetEXArgs{
 				Expiration: &ExpirationOption{
@@ -12571,6 +13082,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should MSetEX with EXAT (Unix timestamp in seconds)", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
 			// Test MSetEX with EXAT - set to expire 10 seconds from now
 			futureTime := time.Now().Add(10 * time.Second)
 			exatValue := futureTime.Unix()
@@ -12600,6 +13112,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should MSetEX with PXAT (Unix timestamp in milliseconds)", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
 			// Test MSetEX with PXAT - set to expire 10 seconds from now
 			futureTime := time.Now().Add(10 * time.Second)
 			pxatValue := futureTime.UnixMilli()
@@ -12629,6 +13142,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should MSetEX with KEEPTTL (preserve existing TTL)", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
 			// First, set a key with a TTL
 			adapter.Set(ctx, "msetex_keepttl_key1", "original_value", 30*time.Second)
 
@@ -12661,6 +13175,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should MSetEX with XX condition (success)", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
 			// First, set existing keys
 			adapter.Set(ctx, "msetex_xx_existing1", "old_value1", 0)
 			adapter.Set(ctx, "msetex_xx_existing2", "old_value2", 0)
@@ -12691,6 +13206,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should MSetEX with XX condition (failure - key does not exist)", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
 			// Try to use XX condition with non-existent keys
 			mSetEX := adapter.MSetEX(ctx, MSetEXArgs{
 				Condition: XX,
@@ -12712,6 +13228,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should MSetEX with multiple key-value pairs (>2)", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
 			// Test MSetEX with 3 key-value pairs
 			mSetEX := adapter.MSetEX(ctx, MSetEXArgs{
 				Expiration: &ExpirationOption{
@@ -12740,6 +13257,30 @@ func testAdapterRedis86() {
 			adapter.Del(ctx, "msetex_multi1", "msetex_multi2", "msetex_multi3")
 		})
 
+		It("should MSetEX with map", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
+			args := MSetEXArgs{
+				Expiration: &ExpirationOption{
+					Mode:  EX,
+					Value: 1,
+				},
+			}
+			mSetEX := adapter.MSetEX(ctx, args, map[string]any{
+				"key1": "value1",
+				"key2": "value2",
+			})
+			Expect(mSetEX.Err()).NotTo(HaveOccurred())
+			Expect(mSetEX.Val()).To(Equal(int64(1)))
+
+			val1 := adapter.Get(ctx, "key1")
+			Expect(val1.Err()).NotTo(HaveOccurred())
+			Expect(val1.Val()).To(Equal("value1"))
+
+			val2 := adapter.Get(ctx, "key2")
+			Expect(val2.Err()).NotTo(HaveOccurred())
+			Expect(val2.Val()).To(Equal("value2"))
+		})
+
 		It("should MSetEX reject odd number of arguments", func() {
 			// Test MSetEX with odd number of arguments (should fail)
 			mSetEX := adapter.MSetEX(ctx, MSetEXArgs{
@@ -12755,6 +13296,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should compare MSetEX expiration", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
 			adapter.Del(ctx, "compare1", "compare2")
 
 			result := adapter.MSetEX(ctx, MSetEXArgs{
@@ -12783,6 +13325,7 @@ func testAdapterRedis86() {
 		})
 
 		It("should MSetEX work with pipeline", func() {
+			skipBeforeServerVersion(adapter, "9.1", "8.4", "MSETEX")
 			pipe := adapter.Pipeline()
 
 			// Add MSetEX command to pipeline
