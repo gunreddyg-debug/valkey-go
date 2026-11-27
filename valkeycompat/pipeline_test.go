@@ -729,8 +729,12 @@ func TestPipeliner(t *testing.T) {
 			Conf: map[string]any{"k": "v"},
 			Args: []any{"1", "2"},
 		})
+		p.SetIFEQ(ctx, "1", 2, 3, time.Second)
+		p.SetIFEQGet(ctx, "1", 2, 3, time.Second)
+		p.SetArgs(ctx, "1", 2, SetArgs{Mode: "IFEQ", MatchValue: 3})
+		p.XAutoClaimWithDeleted(ctx, XAutoClaimArgs{Stream: "stream", Group: "group", Consumer: "consumer", Start: "-", Count: 2})
 
-		if n := len(p.rets); n != 506 {
+		if n := len(p.rets); n != 510 {
 			t.Fatalf("unexpected pipeline calls: %v", n)
 		}
 		for i, cmd := range p.rets {
@@ -738,7 +742,7 @@ func TestPipeliner(t *testing.T) {
 				t.Fatalf("unexpected pipeline placeholder err(%d): %v", i, err)
 			}
 		}
-		if n := len(p.comp.client.(*proxy).cmds); n != 506 {
+		if n := len(p.comp.client.(*proxy).cmds); n != 510 {
 			t.Fatalf("unexpected pipeline commands: %v", n)
 		}
 		var pipeline [][]string
@@ -1349,5 +1353,9 @@ var golden = `[
     ["LATENCY","LATEST"],
     ["LATENCY","RESET"],
     ["CLUSTER","MYSHARDID"],
-    ["MODULE","LOADEX","/","CONFIG","k","v","ARGS","1","2"]
+    ["MODULE","LOADEX","/","CONFIG","k","v","ARGS","1","2"],
+    ["SET","1","2","IFEQ","3","EX","1"],
+    ["SET","1","2","IFEQ","3","GET","EX","1"],
+    ["SET","1","2","IFEQ","3"],
+    ["XAUTOCLAIM","stream","group","consumer","0","-","COUNT","2"]
 ]`
